@@ -28,11 +28,13 @@ namespace Tmpl8
         if (terrain_file.is_open())
         {
             std::string terrain_line;
-            std::getline(terrain_file, terrain_line);
-            //std::istringstream lineStream(terrain_line);
-            int rows = std::stoi(terrain_line);
-            //lineStream >> rows;
 
+            std::getline(terrain_file, terrain_line);
+            std::istringstream lineStream(terrain_line);
+
+            int rows;
+
+            lineStream >> rows;
             for (size_t row = 0; row < rows; row++)
             {
                 std::getline(terrain_file, terrain_line);

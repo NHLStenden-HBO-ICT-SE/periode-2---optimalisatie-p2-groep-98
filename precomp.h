@@ -43,6 +43,7 @@
 #include <array>
 #include <chrono>
 #include <fstream>
+#include <sstream>
 #include <iostream>
 #include <limits>
 #include <memory>
