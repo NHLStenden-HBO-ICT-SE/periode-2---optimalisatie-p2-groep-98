@@ -135,7 +135,7 @@ void Game::update(float deltaTime)
             t.set_route(background_terrain.get_route(t, t.target));
         }
     }
-
+    auto begin = chrono::high_resolution_clock::now();
     //Check tank collision and nudge tanks away from each other
     for (Tank& tank : tanks)
     {
@@ -158,7 +158,10 @@ void Game::update(float deltaTime)
             }
         }
     }
-
+    auto end = chrono::high_resolution_clock::now();
+    auto dur = end - begin;
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(dur).count();
+    cout << ms << endl;
     //Update tanks
     for (Tank& tank : tanks)
     {
@@ -367,44 +370,65 @@ void Game::draw()
 
         const int begin = ((t < 1) ? 0 : num_tanks_blue);
         std::vector<const Tank*> sorted_tanks;
-        insertion_sort_tanks_health(tanks, sorted_tanks, begin, begin + NUM_TANKS);
+        merge_sort_tanks_health(tanks, sorted_tanks, begin, begin + NUM_TANKS - 1);
         sorted_tanks.erase(std::remove_if(sorted_tanks.begin(), sorted_tanks.end(), [](const Tank* tank) { return !tank->active; }), sorted_tanks.end());
 
         draw_health_bars(sorted_tanks, t);
     }
 }
+ 
+void merge(const std::vector<Tank>& tanks, std::vector<const Tank*>& sorted_tanks, int start, int mid, int end) {
 
-// -----------------------------------------------------------
-// Sort tanks by health value using insertion sort
-// -----------------------------------------------------------
-void Tmpl8::Game::insertion_sort_tanks_health(const std::vector<Tank>& original, std::vector<const Tank*>& sorted_tanks, int begin, int end)
-{
-    const int NUM_TANKS = end - begin;
-    sorted_tanks.reserve(NUM_TANKS);
-    sorted_tanks.emplace_back(&original.at(begin));
+    // temp is used to temporary store the vector obtained by merging
+    // elements from [start to mid] and [mid+1 to end] in v
+    vector<const Tank> temp;
 
-    for (int i = begin + 1; i < (begin + NUM_TANKS); i++)
-    {
-        const Tank& current_tank = original.at(i);
+    int i, j;
+    i = start;
+    j = mid + 1;
 
-        for (int s = (int)sorted_tanks.size() - 1; s >= 0; s--)
-        {
-            const Tank* current_checking_tank = sorted_tanks.at(s);
+    while (i <= mid && j <= end) {
 
-            if ((current_checking_tank->compare_health(current_tank) <= 0))
-            {
-                sorted_tanks.insert(1 + sorted_tanks.begin() + s, &current_tank);
-                break;
-            }
-
-            if (s == 0)
-            {
-                sorted_tanks.insert(sorted_tanks.begin(), &current_tank);
-                break;
-            }
+        if (tanks.at(i).health <= tanks.at(j).health) {
+            temp.push_back(tanks.at(i));
+            ++i;
         }
+        else {
+            temp.push_back(tanks.at(j));
+            ++j;
+        }
+
+    }
+
+    while (i <= mid) {
+        temp.push_back(tanks.at(i));
+        ++i;
+    }
+
+    while (j <= end) {
+        temp.push_back(tanks.at(j));
+        ++j;
+    }
+
+    for (int i = start; i <= end; ++i)
+        sorted_tanks.emplace_back(temp.at(i - start));
+        //sorted_tanks.at(i) = temp.at(i - start);
+    //sorted_tanks.emplace_back(temp);
+}
+
+//Merge sort tanks
+void Tmpl8::Game::merge_sort_tanks_health(const std::vector<Tank>& tanks, std::vector<const Tank*>& sorted_tanks, int start, int end) {
+    if (start < end) {
+        const int mid = (start + end) / 2;
+        merge_sort_tanks_health(tanks, sorted_tanks, start, mid);
+        merge_sort_tanks_health(tanks, sorted_tanks, mid + 1, end);
+        merge(tanks, sorted_tanks, start, mid, end);
+        //for (auto t : test) {
+        //    sorted_tanks.emplace_back(t);
+        //}
     }
 }
+
 
 // -----------------------------------------------------------
 // Draw the health bars based on the given tanks health values
