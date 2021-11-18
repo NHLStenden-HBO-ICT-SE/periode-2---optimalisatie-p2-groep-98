@@ -36,10 +36,117 @@
     <Filter Include="template code">
       <UniqueIdentifier>{bf32dd6e-4be7-4889-8ac6-49e7ee163c40}</UniqueIdentifier>
     </Filter>
+    <Filter Include="assets">
+      <UniqueIdentifier>{c0bea94b-c9a8-4594-a7ff-de44cf601c9d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="_readme.txt">
       <Filter>template code</Filter>
     </Text>
+    <Text Include="assets\terrain.txt">
+      <Filter>assets</Filter>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="assets\aagun.tga">
+      <Filter>assets</Filter>
+    </Image>
+    <Image Include="assets\Background_Grass.png">
+      <Filter>assets</Filter>
+    </Image>
+    <Image Include="assets\ball.png">
+      <Filter>assets</Filter>
+    </Image>
+    <Image Include="assets\biggun.tga">
+      <Filter>assets</Filter>
+    </Image>
+    <Image Include="assets\ctankbase.tga">
+      <Filter>assets</Filter>
+    </Image>
+    <Image Include="assets\ctankgun.tga">
+      <Filter>assets</Filter>
+    </Image>
+    <Image Include="assets\ctankshadow.tga">
+      <Filter>assets</Filter>
+    </Image>
+    <Image Include="assets\digital_small.png">
+      <Filter>assets</Filter>
+    </Image>
+    <Image Include="assets\Explosion.png">
+      <Filter>assets</Filter>
+    </Image>
+    <Image Include="assets\mill.tga">
+      <Filter>assets</Filter>
+    </Image>
+    <Image Include="assets\minigun.tga">
+      <Filter>assets</Filter>
+    </Image>
+    <Image Include="assets\missile.tga">
+      <Filter>assets</Filter>
+    </Image>
+    <Image Include="assets\missile_big.tga">
+      <Filter>assets</Filter>
+    </Image>
+    <Image Include="assets\nc2tiles.png">
+      <Filter>assets</Filter>
+    </Image>
+    <Image Include="assets\Particle_Beam.png">
+      <Filter>assets</Filter>
+    </Image>
+    <Image Include="assets\phaser.tga">
+      <Filter>assets</Filter>
+    </Image>
+    <Image Include="assets\playership.png">
+      <Filter>assets</Filter>
+    </Image>
+    <Image Include="assets\Rocket_Blue_Proj2.png">
+      <Filter>assets</Filter>
+    </Image>
+    <Image Include="assets\Rocket_Proj2.png">
+      <Filter>assets</Filter>
+    </Image>
+    <Image Include="assets\Smoke.png">
+      <Filter>assets</Filter>
+    </Image>
+    <Image Include="assets\smoke.tga">
+      <Filter>assets</Filter>
+    </Image>
+    <Image Include="assets\sniper.tga">
+      <Filter>assets</Filter>
+    </Image>
+    <Image Include="assets\starwars.png">
+      <Filter>assets</Filter>
+    </Image>
+    <Image Include="assets\Tank_Blue_Proj2.png">
+      <Filter>assets</Filter>
+    </Image>
+    <Image Include="assets\Tank_Proj2.png">
+      <Filter>assets</Filter>
+    </Image>
+    <Image Include="assets\target.tga">
+      <Filter>assets</Filter>
+    </Image>
+    <Image Include="assets\tile_forest.png">
+      <Filter>assets</Filter>
+    </Image>
+    <Image Include="assets\tile_grass.png">
+      <Filter>assets</Filter>
+    </Image>
+    <Image Include="assets\tile_mountains.png">
+      <Filter>assets</Filter>
+    </Image>
+    <Image Include="assets\tile_rocks.png">
+      <Filter>assets</Filter>
+    </Image>
+    <Image Include="assets\tile_water.png">
+      <Filter>assets</Filter>
+    </Image>
+    <Image Include="assets\tileset.png">
+      <Filter>assets</Filter>
+    </Image>
+    <Image Include="assets\turret.tga">
+      <Filter>assets</Filter>
+    </Image>
   </ItemGroup>
 </Project>

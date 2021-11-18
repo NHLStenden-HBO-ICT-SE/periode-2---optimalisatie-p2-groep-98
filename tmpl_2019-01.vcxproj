@@ -145,7 +145,43 @@
     <ClInclude Include="thread_pool.h" />
   </ItemGroup>
   <ItemGroup>
+    <Text Include="assets\terrain.txt" />
     <Text Include="_readme.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="assets\aagun.tga" />
+    <Image Include="assets\Background_Grass.png" />
+    <Image Include="assets\ball.png" />
+    <Image Include="assets\biggun.tga" />
+    <Image Include="assets\ctankbase.tga" />
+    <Image Include="assets\ctankgun.tga" />
+    <Image Include="assets\ctankshadow.tga" />
+    <Image Include="assets\digital_small.png" />
+    <Image Include="assets\Explosion.png" />
+    <Image Include="assets\mill.tga" />
+    <Image Include="assets\minigun.tga" />
+    <Image Include="assets\missile.tga" />
+    <Image Include="assets\missile_big.tga" />
+    <Image Include="assets\nc2tiles.png" />
+    <Image Include="assets\Particle_Beam.png" />
+    <Image Include="assets\phaser.tga" />
+    <Image Include="assets\playership.png" />
+    <Image Include="assets\Rocket_Blue_Proj2.png" />
+    <Image Include="assets\Rocket_Proj2.png" />
+    <Image Include="assets\Smoke.png" />
+    <Image Include="assets\smoke.tga" />
+    <Image Include="assets\sniper.tga" />
+    <Image Include="assets\starwars.png" />
+    <Image Include="assets\Tank_Blue_Proj2.png" />
+    <Image Include="assets\Tank_Proj2.png" />
+    <Image Include="assets\target.tga" />
+    <Image Include="assets\tileset.png" />
+    <Image Include="assets\tile_forest.png" />
+    <Image Include="assets\tile_grass.png" />
+    <Image Include="assets\tile_mountains.png" />
+    <Image Include="assets\tile_rocks.png" />
+    <Image Include="assets\tile_water.png" />
+    <Image Include="assets\turret.tga" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
