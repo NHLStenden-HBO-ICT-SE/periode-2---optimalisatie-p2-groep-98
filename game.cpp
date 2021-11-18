@@ -1,4 +1,5 @@
 #include "precomp.h" // include (only) this in every .cpp file
+#include <chrono>
 
 constexpr auto num_tanks_blue = 2048;
 constexpr auto num_tanks_red = 2048;
@@ -137,10 +138,17 @@ void Game::update(float deltaTime)
     }
 
     //Check tank collision and nudge tanks away from each other
+    //Optimize, create a list with active tanks instead of checking in the tanks list
+
+
+    auto begin = chrono::high_resolution_clock::now();
     for (Tank& tank : tanks)
     {
         if (tank.active)
         {
+            //use the active tank list
+            //What about a grid system where the  other_tank 's are only the tanks in the same grid block.
+
             for (Tank& other_tank : tanks)
             {
                 if (&tank == &other_tank || !other_tank.active) continue;
@@ -158,6 +166,11 @@ void Game::update(float deltaTime)
             }
         }
     }
+    auto end = chrono::high_resolution_clock::now();
+    auto dur = end - begin;
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(dur).count();
+    cout << ms << endl;
+
 
     //Update tanks
     for (Tank& tank : tanks)
@@ -188,7 +201,8 @@ void Game::update(float deltaTime)
     //Calculate "forcefield" around active tanks
     forcefield_hull.clear();
 
-    //Find first active tank (this loop is a bit disgusting, fix?)
+    //Find first active tank (this loop is a bit disgusting, fix?) 
+    //Optimize : solution for comment above is using the alive_tanks list and get the first
     int first_active = 0;
     for (Tank& tank : tanks)
     {
@@ -263,6 +277,8 @@ void Game::update(float deltaTime)
 
     //Disable rockets if they collide with the "forcefield"
     //Hint: A point to convex hull intersection test might be better here? :) (Disable if outside)
+
+    //Optimize: active_rocket list 
     for (Rocket& rocket : rockets)
     {
         if (rocket.active)
@@ -377,6 +393,7 @@ void Game::draw()
 // -----------------------------------------------------------
 // Sort tanks by health value using insertion sort
 // -----------------------------------------------------------
+// Optimize this, O(N^2)
 void Tmpl8::Game::insertion_sort_tanks_health(const std::vector<Tank>& original, std::vector<const Tank*>& sorted_tanks, int begin, int end)
 {
     const int NUM_TANKS = end - begin;
@@ -425,6 +442,8 @@ void Tmpl8::Game::draw_health_bars(const std::vector<const Tank*>& sorted_tanks,
 
     //Draw the <SCRHEIGHT> least healthy tank health bars
     int draw_count = std::min(SCRHEIGHT, (int)sorted_tanks.size());
+
+    //Draw height is the screenheight : 720 or the amount of thanks left
     for (int i = 0; i < draw_count - 1; i++)
     {
         //Health bars are 1 pixel each
@@ -433,7 +452,8 @@ void Tmpl8::Game::draw_health_bars(const std::vector<const Tank*>& sorted_tanks,
 
         float health_fraction = (1 - ((double)sorted_tanks.at(i)->health / (double)tank_max_health));
 
-        if (team == 0) { screen->bar(health_bar_start_x + (int)((double)health_bar_width * health_fraction), health_bar_start_y, health_bar_end_x, health_bar_end_y, GREENMASK); }
+        if (team == 0) { 
+            screen->bar(health_bar_start_x + (int)((double)health_bar_width * health_fraction), health_bar_start_y, health_bar_end_x, health_bar_end_y, GREENMASK); }
         else { screen->bar(health_bar_start_x, health_bar_start_y, health_bar_end_x - (int)((double)health_bar_width * health_fraction), health_bar_end_y, GREENMASK); }
     }
 }
