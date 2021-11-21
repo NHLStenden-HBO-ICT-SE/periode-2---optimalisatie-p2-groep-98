@@ -376,7 +376,7 @@ void Game::draw()
         draw_health_bars(sorted_tanks, t);
     }
 }
-
+ 
 void merge(const std::vector<Tank>& tanks, std::vector<const Tank*>& sorted_tanks, int start, int mid, int end) {
 
     // temp is used to temporary store the vector obtained by merging
@@ -410,12 +410,10 @@ void merge(const std::vector<Tank>& tanks, std::vector<const Tank*>& sorted_tank
         ++j;
     }
 
-    for (int i = start; i <= end; ++i) {
-        //sorted_tanks.at(i) = temp[i - start];
-        const Tank& current_tank = temp.at(i);
-
-        sorted_tanks.insert(sorted_tanks.begin(), current_tank);
-    }
+    for (int i = start; i <= end; ++i)
+        sorted_tanks.emplace_back(temp.at(i - start));
+        //sorted_tanks.at(i) = temp.at(i - start);
+    //sorted_tanks.emplace_back(temp);
 }
 
 //Merge sort tanks
