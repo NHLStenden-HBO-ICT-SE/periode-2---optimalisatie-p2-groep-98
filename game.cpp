@@ -376,56 +376,55 @@ void Game::draw()
         draw_health_bars(sorted_tanks, t);
     }
 }
- 
-void merge(const std::vector<Tank>& tanks, std::vector<const Tank*>& sorted_tanks, int start, int mid, int end) {
 
-    // temp is used to temporary store the vector obtained by merging
-    // elements from [start to mid] and [mid+1 to end] in v
-    vector<const Tank> temp;
+void merge(const std::vector<Tank>& original, std::vector<const Tank*>& sorted_tanks, int start, int mid, int end) {
 
-    int i, j;
-    i = start;
-    j = mid + 1;
 
+    // create a temp array
+    vector<Tank> temp;
+
+    // crawlers for both intervals and for temp
+    int i = start, j = mid + 1, k = 0;
+
+    // traverse both arrays and in each iteration add smaller of both elements in temp 
     while (i <= mid && j <= end) {
-
-        if (tanks.at(i).health <= tanks.at(j).health) {
-            temp.push_back(tanks.at(i));
-            ++i;
+        if (original.at(i).health <= original.at(j).health) {
+            temp.at(k) = original.at(i);
+            k += 1; i += 1;
         }
         else {
-            temp.push_back(tanks.at(j));
-            ++j;
+            temp.at(k) = original.at(j);
+            k += 1; j += 1;
         }
-
     }
 
+    // add elements left in the first interval 
     while (i <= mid) {
-        temp.push_back(tanks.at(i));
-        ++i;
+        temp.at(k) = original.at(i);
+        k += 1; i += 1;
     }
 
+    // add elements left in the second interval 
     while (j <= end) {
-        temp.push_back(tanks.at(j));
-        ++j;
+        temp.at(k) = original.at(j);
+        k += 1; j += 1;
     }
 
-    for (int i = start; i <= end; ++i)
-        sorted_tanks.emplace_back(temp.at(i - start));
-        //sorted_tanks.at(i) = temp.at(i - start);
-    //sorted_tanks.emplace_back(temp);
+    // copy temp to original interval
+    for (i = start; i <= end; i += 1) {
+        const Tank& current_tank = temp.at(i);
+        //sorted_tanks.at(i) = temp[i - start];
+        sorted_tanks.insert(sorted_tanks.begin(), current_tank);
+    }
 }
 
 //Merge sort tanks
 void Tmpl8::Game::merge_sort_tanks_health(const std::vector<Tank>& tanks, std::vector<const Tank*>& sorted_tanks, int start, int end) {
     if (start < end) {
-        const int mid = (start + end) / 2;
+        int mid = (start + end) / 2;
         merge_sort_tanks_health(tanks, sorted_tanks, start, mid);
         merge_sort_tanks_health(tanks, sorted_tanks, mid + 1, end);
         merge(tanks, sorted_tanks, start, mid, end);
-        //for (auto t : test) {
-        //    sorted_tanks.emplace_back(t);
-        //}
     }
 }
 
