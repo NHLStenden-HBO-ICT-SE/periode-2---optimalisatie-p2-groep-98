@@ -5,7 +5,9 @@
 
 /build
 
-
+#Performance number
+performance.h
+performance.cpp
 
 # User-specific files
 *.rsuser
