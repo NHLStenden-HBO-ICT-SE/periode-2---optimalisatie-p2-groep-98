@@ -141,14 +141,13 @@ void Game::update(float deltaTime)
     //Optimize, create a list with active tanks instead of checking in the tanks list
 
 
-    auto begin = chrono::high_resolution_clock::now();
     for (Tank& tank : tanks)
     {
         if (tank.active)
         {
             //use the active tank list
             //What about a grid system where the  other_tank 's are only the tanks in the same grid block.
-
+            //Name of the algorithm: The separate axis theorem
             for (Tank& other_tank : tanks)
             {
                 if (&tank == &other_tank || !other_tank.active) continue;
@@ -166,10 +165,7 @@ void Game::update(float deltaTime)
             }
         }
     }
-    auto end = chrono::high_resolution_clock::now();
-    auto dur = end - begin;
-    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(dur).count();
-    cout << ms << endl;
+    
 
 
     //Update tanks
@@ -226,10 +222,13 @@ void Game::update(float deltaTime)
     }
 
     //Calculate convex hull for 'rocket barrier'
+    auto begin = chrono::high_resolution_clock::now();
+
+   
+    tanks.erase(std::remove_if(tanks.begin(), tanks.end(), [](const Tank& tank) { return !tank.active; }), tanks.end());
     for (Tank& tank : tanks)
     {
-        if (tank.active)
-        {
+        
             forcefield_hull.push_back(point_on_hull);
             vec2 endpoint = tanks.at(first_active).position;
 
@@ -249,9 +248,12 @@ void Game::update(float deltaTime)
             {
                 break;
             }
-        }
+        
     }
-
+    auto end = chrono::high_resolution_clock::now();
+    auto dur = end - begin;
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(dur).count();
+    cout << ms << endl;
     //Update rockets
     for (Rocket& rocket : rockets)
     {
@@ -279,6 +281,7 @@ void Game::update(float deltaTime)
     //Hint: A point to convex hull intersection test might be better here? :) (Disable if outside)
 
     //Optimize: active_rocket list 
+    
     for (Rocket& rocket : rockets)
     {
         if (rocket.active)
@@ -339,12 +342,17 @@ void Game::draw()
     background_terrain.draw(screen);
 
     //Draw sprites
+    for (Tank t : tanks) {
+        t.draw(screen);
+
+    }
+    /*
     for (int i = 0; i < num_tanks_blue + num_tanks_red; i++)
     {
         tanks.at(i).draw(screen);
 
         vec2 tank_pos = tanks.at(i).get_position();
-    }
+    }*/
 
     for (Rocket& rocket : rockets)
     {
@@ -379,11 +387,12 @@ void Game::draw()
     //Draw sorted health bars
     for (int t = 0; t < 2; t++)
     {
-        const int NUM_TANKS = ((t < 1) ? num_tanks_blue : num_tanks_red);
+        const int NUM_TANKS = tanks.size();
+
 
         const int begin = ((t < 1) ? 0 : num_tanks_blue);
         std::vector<const Tank*> sorted_tanks;
-        insertion_sort_tanks_health(tanks, sorted_tanks, begin, begin + NUM_TANKS);
+        insertion_sort_tanks_health(tanks, sorted_tanks, begin, NUM_TANKS);
         sorted_tanks.erase(std::remove_if(sorted_tanks.begin(), sorted_tanks.end(), [](const Tank* tank) { return !tank->active; }), sorted_tanks.end());
 
         draw_health_bars(sorted_tanks, t);

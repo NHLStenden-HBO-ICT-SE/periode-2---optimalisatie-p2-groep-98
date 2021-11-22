@@ -25,7 +25,7 @@ class Tank
 
     void set_route(const std::vector<vec2>& route);
     void reload_rocket();
-
+    
     void deactivate();
     bool hit(int hit_value);
 
