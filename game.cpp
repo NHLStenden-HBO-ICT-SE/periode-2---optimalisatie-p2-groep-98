@@ -412,7 +412,7 @@ void merge(const std::vector<Tank>& original, std::vector<const Tank*>& sorted_t
 
     // copy temp to original interval
     for (i = start; i <= end; i += 1) {
-        const Tank& current_tank = temp.at(i);
+        const Tank* current_tank = &temp.at(i);
         //sorted_tanks.at(i) = temp[i - start];
         sorted_tanks.insert(sorted_tanks.begin(), current_tank);
     }
