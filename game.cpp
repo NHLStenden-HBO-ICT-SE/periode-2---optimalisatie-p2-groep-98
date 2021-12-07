@@ -14,7 +14,7 @@ constexpr auto health_bar_width = 70;
 constexpr auto max_frames = 2000;
 
 //Global performance timer
-constexpr auto REF_PERFORMANCE = 114757; //UPDATE THIS WITH YOUR REFERENCE PERFORMANCE (see console after 2k frames)
+constexpr auto REF_PERFORMANCE = 114571; //UPDATE THIS WITH YOUR REFERENCE PERFORMANCE (see console after 2k frames)
 static timer perf_timer;
 static float duration;
 
@@ -132,7 +132,7 @@ void Game::update(float deltaTime)
     {
         for (Tank& t : tanks)
         {
-            t.set_route(background_terrain.get_route(t, t.target));
+            //t.set_route(background_terrain.get_route(t, t.target));
         }
     }
     auto begin = chrono::high_resolution_clock::now();
@@ -376,45 +376,79 @@ void Game::draw()
         draw_health_bars(sorted_tanks, t);
     }
 }
+//void Tmpl8::Game::insertion_sort_tanks_health(const std::vector<Tank>& original, std::vector<const Tank*>& sorted_tanks, int begin, int end)
+//{
+//    const int NUM_TANKS = end - begin;
+//    sorted_tanks.reserve(NUM_TANKS);
+//    sorted_tanks.emplace_back(&original.at(begin));
+//
+//    for (int i = begin + 1; i < (begin + NUM_TANKS); i++)
+//    {
+//        const Tank& current_tank = original.at(i);
+//
+//        for (int s = (int)sorted_tanks.size() - 1; s >= 0; s--)
+//        {
+//            const Tank* current_checking_tank = sorted_tanks.at(s);
+//
+//            if ((current_checking_tank->compare_health(current_tank) <= 0))
+//            {
+//                sorted_tanks.insert(1 + sorted_tanks.begin() + s, &current_tank);
+//                break;
+//            }
+//
+//            if (s == 0)
+//            {
+//                sorted_tanks.insert(sorted_tanks.begin(), &current_tank);
+//                break;
+//            }
+//        }
+//    }
+//}
 
 void merge(const std::vector<Tank>& original, std::vector<const Tank*>& sorted_tanks, int start, int mid, int end) {
 
+    int const subArrayOne = mid - start + 1;
+    int const subArrayTwo = end - mid;
 
-    // create a temp array
-    vector<Tank> temp;
+    // Create temp arrays
+    vector<Tank>* leftArray;
+    vector<Tank>* rightArray;
 
-    // crawlers for both intervals and for temp
-    int i = start, j = mid + 1, k = 0;
+    // Copy data to temp arrays leftArray[] and rightArray[]
+    for (int i = 0; i < subArrayOne; i++)
+        leftArray.emplace_back(&original[start + i]);
+    for (int j = 0; j < subArrayTwo; j++)
+        rightArray.emplace_back(&original[mid + 1 + j]);
 
-    // traverse both arrays and in each iteration add smaller of both elements in temp 
-    while (i <= mid && j <= end) {
-        if (original.at(i).health <= original.at(j).health) {
-            temp.at(k) = original.at(i);
-            k += 1; i += 1;
+    int indexOfSubArrayOne = 0, // Initial index of first sub-array
+        indexOfSubArrayTwo = 0; // Initial index of second sub-array
+    int indexOfMergedArray = start; // Initial index of merged array
+
+    // Merge the temp arrays back into array[left..right]
+    while (indexOfSubArrayOne < subArrayOne && indexOfSubArrayTwo < subArrayTwo) {
+        if (leftArray[indexOfSubArrayOne].health <= rightArray[indexOfSubArrayTwo].health) {
+            sorted_tanks.emplace_back(&leftArray[indexOfSubArrayOne]);
+            indexOfSubArrayOne++;
         }
         else {
-            temp.at(k) = original.at(j);
-            k += 1; j += 1;
+            sorted_tanks.emplace_back(&rightArray[indexOfSubArrayTwo]);
+            indexOfSubArrayTwo++;
         }
+        indexOfMergedArray++;
     }
-
-    // add elements left in the first interval 
-    while (i <= mid) {
-        temp.at(k) = original.at(i);
-        k += 1; i += 1;
+    // Copy the remaining elements of
+    // left[], if there are any
+    while (indexOfSubArrayOne < subArrayOne) {
+        sorted_tanks.emplace_back(&leftArray[indexOfSubArrayOne]);
+        indexOfSubArrayOne++;
+        indexOfMergedArray++;
     }
-
-    // add elements left in the second interval 
-    while (j <= end) {
-        temp.at(k) = original.at(j);
-        k += 1; j += 1;
-    }
-
-    // copy temp to original interval
-    for (i = start; i <= end; i += 1) {
-        const Tank* current_tank = &temp.at(i);
-        //sorted_tanks.at(i) = temp[i - start];
-        sorted_tanks.insert(sorted_tanks.begin(), current_tank);
+    // Copy the remaining elements of
+    // right[], if there are any
+    while (indexOfSubArrayTwo < subArrayTwo) {
+        sorted_tanks.emplace_back(&rightArray[indexOfSubArrayTwo]);
+        indexOfSubArrayTwo++;
+        indexOfMergedArray++;
     }
 }
 
