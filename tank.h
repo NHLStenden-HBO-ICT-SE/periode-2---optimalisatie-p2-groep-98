@@ -1,5 +1,5 @@
 #pragma once
-
+#include <iostream>
 namespace Tmpl8
 {
     class Terrain; //forward declare
@@ -14,8 +14,10 @@ class Tank
 {
   public:
     Tank(float pos_x, float pos_y, allignments allignment, Sprite* tank_sprite, Sprite* smoke_sprite, float tar_x, float tar_y, float collision_radius, int health, float max_speed);
-
+    Tank();
     ~Tank();
+
+    int getProperty(std::string name);
 
     void tick(Terrain& terrain);
 

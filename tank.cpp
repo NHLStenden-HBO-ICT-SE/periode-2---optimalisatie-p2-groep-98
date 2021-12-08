@@ -4,6 +4,11 @@
 
 namespace Tmpl8
 {
+
+    Tank::Tank() {
+
+}
+
 Tank::Tank(
     float pos_x,
     float pos_y,
@@ -34,6 +39,19 @@ Tank::Tank(
 
 Tank::~Tank()
 {
+}
+
+int Tank::getProperty(std::string name) {
+    if (name == "health") {
+        return this->health;
+    }
+    if (name == "x") {
+        return this->position.x;
+    }
+    if (name == "y") {
+        return this->position.y;
+    }
+    std::cout << "NO PROPERTY NAMED " << name << std::endl;
 }
 
 void Tank::tick(Terrain& terrain)

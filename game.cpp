@@ -328,6 +328,73 @@ void Game::update(float deltaTime)
 
     explosions.erase(std::remove_if(explosions.begin(), explosions.end(), [](const Explosion& explosion) { return explosion.done(); }), explosions.end());
 }
+void merge(vector<Tank>& list, int const left, int const mid, int const right, string sortOn)
+{
+    const int subList1 = mid - left + 1;
+    const int subList2 = right - mid;
+
+
+    //list.begin() + left, list.begin() + left + subArrayOne
+    //list.begin() + mid, list.begin() + mid + subArrayTwo
+    vector<Tank> leftArray = {  };
+    vector<Tank> rightArray = {  };
+
+
+
+    //De list splitten in de 2 sublijsten
+    for (int i = 0; i < subList1; i++) {
+        leftArray.push_back(list.at(left + i));
+
+    }
+    for (int j = 0; j < subList2; j++) {
+        rightArray.push_back(list.at(mid + 1 + j));
+
+    }
+
+
+    int indexList1 = 0;
+    int indexList2 = 0;
+    int indexMerged = left;
+
+
+    while (indexList1 < subList1 && indexList2 < subList2) {
+        if (leftArray[indexList1].getProperty(sortOn) <= rightArray[indexList2].getProperty(sortOn)) {
+            list[indexMerged] = leftArray[indexList1];
+            indexList1++;
+        }
+        else {
+            list[indexMerged] = rightArray[indexList2];
+            indexList2++;
+        }
+        indexMerged++;
+    }
+
+    while (indexList1 < subList1) {
+        list[indexMerged] = leftArray[indexList1];
+        indexList1++;
+        indexMerged++;
+    }
+
+    while (indexList2 < subList2) {
+        list[indexMerged] = rightArray[indexList2];
+        indexList2++;
+        indexMerged++;
+    }
+
+}
+
+void mergeSort(vector<Tank>& list, int const begin, int const end, string sortOn)
+{
+    if (begin >= end) {
+        return;
+    }
+    int mid = begin + (end - begin) / 2;
+    mergeSort(list, begin, mid, sortOn);
+    mergeSort(list, mid + 1, end, sortOn);
+    merge(list, begin, mid, end, sortOn);
+
+}
+
 
 // -----------------------------------------------------------
 // Draw all sprites to the screen
@@ -385,19 +452,46 @@ void Game::draw()
     }
 
     //Draw sorted health bars
-    for (int t = 0; t < 2; t++)
-    {
+    
         const int NUM_TANKS = tanks.size();
 
 
-        const int begin = ((t < 1) ? 0 : num_tanks_blue);
         std::vector<const Tank*> sorted_tanks;
-        insertion_sort_tanks_health(tanks, sorted_tanks, begin, NUM_TANKS);
-        sorted_tanks.erase(std::remove_if(sorted_tanks.begin(), sorted_tanks.end(), [](const Tank* tank) { return !tank->active; }), sorted_tanks.end());
+        vector<Tank> toSort;
+        for (Tank t : tanks) {
+            toSort.push_back(t);
+        }
+        
+        mergeSort(toSort, 0, NUM_TANKS - 1, "health");
+        toSort.erase(std::remove_if(toSort.begin(), toSort.end(), [](Tank* tank) { return !tank->active; }), toSort.end());
 
-        draw_health_bars(sorted_tanks, t);
-    }
+        std::vector<const Tank*> sorted_tanks_blue;
+        std::vector<const Tank*> sorted_tanks_red;
+        for (int i = 0; i < toSort.size(); i++) {
+            const Tank& current_tank = toSort.at(i);
+
+            if (current_tank.allignment == BLUE) {
+                sorted_tanks_blue.emplace_back(&current_tank);
+            }
+            else {
+                sorted_tanks_red.emplace_back(&current_tank);
+
+            }
+        }
+        draw_health_bars(sorted_tanks_blue, 0);
+
+        draw_health_bars(sorted_tanks_red, 1);
+        
+        //insertion_sort_tanks_health(tanks, sorted_tanks, begin, NUM_TANKS);
+
+        
 }
+
+
+
+
+
+
 
 // -----------------------------------------------------------
 // Sort tanks by health value using insertion sort
@@ -405,31 +499,7 @@ void Game::draw()
 // Optimize this, O(N^2)
 void Tmpl8::Game::insertion_sort_tanks_health(const std::vector<Tank>& original, std::vector<const Tank*>& sorted_tanks, int begin, int end)
 {
-    const int NUM_TANKS = end - begin;
-    sorted_tanks.reserve(NUM_TANKS);
-    sorted_tanks.emplace_back(&original.at(begin));
-
-    for (int i = begin + 1; i < (begin + NUM_TANKS); i++)
-    {
-        const Tank& current_tank = original.at(i);
-
-        for (int s = (int)sorted_tanks.size() - 1; s >= 0; s--)
-        {
-            const Tank* current_checking_tank = sorted_tanks.at(s);
-
-            if ((current_checking_tank->compare_health(current_tank) <= 0))
-            {
-                sorted_tanks.insert(1 + sorted_tanks.begin() + s, &current_tank);
-                break;
-            }
-
-            if (s == 0)
-            {
-                sorted_tanks.insert(sorted_tanks.begin(), &current_tank);
-                break;
-            }
-        }
-    }
+    //mergeSort(original, 0,0)
 }
 
 // -----------------------------------------------------------
