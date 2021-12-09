@@ -456,25 +456,24 @@ void Game::draw()
         const int NUM_TANKS = tanks.size();
 
 
-        std::vector<const Tank*> sorted_tanks;
         vector<Tank> toSort;
         for (Tank t : tanks) {
             toSort.push_back(t);
         }
         
         mergeSort(toSort, 0, NUM_TANKS - 1, "health");
-        toSort.erase(std::remove_if(toSort.begin(), toSort.end(), [](Tank* tank) { return !tank->active; }), toSort.end());
+        //toSort.erase(std::remove_if(toSort.begin(), toSort.end(), [](Tank* tank) { return !tank->active; }), toSort.end());
 
-        std::vector<const Tank*> sorted_tanks_blue;
-        std::vector<const Tank*> sorted_tanks_red;
+        std::vector<Tank> sorted_tanks_blue;
+        std::vector<Tank> sorted_tanks_red;
         for (int i = 0; i < toSort.size(); i++) {
-            const Tank& current_tank = toSort.at(i);
+            Tank current_tank = toSort.at(i);
 
             if (current_tank.allignment == BLUE) {
-                sorted_tanks_blue.emplace_back(&current_tank);
+                sorted_tanks_blue.emplace_back(current_tank);
             }
             else {
-                sorted_tanks_red.emplace_back(&current_tank);
+                sorted_tanks_red.emplace_back(current_tank);
 
             }
         }
@@ -482,7 +481,6 @@ void Game::draw()
 
         draw_health_bars(sorted_tanks_red, 1);
         
-        //insertion_sort_tanks_health(tanks, sorted_tanks, begin, NUM_TANKS);
 
         
 }
@@ -493,19 +491,11 @@ void Game::draw()
 
 
 
-// -----------------------------------------------------------
-// Sort tanks by health value using insertion sort
-// -----------------------------------------------------------
-// Optimize this, O(N^2)
-void Tmpl8::Game::insertion_sort_tanks_health(const std::vector<Tank>& original, std::vector<const Tank*>& sorted_tanks, int begin, int end)
-{
-    //mergeSort(original, 0,0)
-}
 
 // -----------------------------------------------------------
 // Draw the health bars based on the given tanks health values
 // -----------------------------------------------------------
-void Tmpl8::Game::draw_health_bars(const std::vector<const Tank*>& sorted_tanks, const int team)
+void Tmpl8::Game::draw_health_bars(const std::vector<Tank>& sorted_tanks, const int team)
 {
     int health_bar_start_x = (team < 1) ? 0 : (SCRWIDTH - HEALTHBAR_OFFSET) - 1;
     int health_bar_end_x = (team < 1) ? health_bar_width : health_bar_start_x + health_bar_width - 1;
@@ -529,7 +519,7 @@ void Tmpl8::Game::draw_health_bars(const std::vector<const Tank*>& sorted_tanks,
         int health_bar_start_y = i * 1;
         int health_bar_end_y = health_bar_start_y + 1;
 
-        float health_fraction = (1 - ((double)sorted_tanks.at(i)->health / (double)tank_max_health));
+        float health_fraction = (1 - ((double)sorted_tanks.at(i).health / (double)tank_max_health));
 
         if (team == 0) { 
             screen->bar(health_bar_start_x + (int)((double)health_bar_width * health_fraction), health_bar_start_y, health_bar_end_x, health_bar_end_y, GREENMASK); }
