@@ -131,8 +131,12 @@ void Game::update(float deltaTime)
     //Initializing routes here so it gets counted for performance..
     if (frame_count == 0)
     {
-        for (Tank& t : tanks)
-        {
+        for (Tank& t : tanks) {
+
+            /*pool->enqueue([&]() {
+                t.set_route(background_terrain.get_route(t, t.target));
+                });
+            */
             t.set_route(background_terrain.get_route(t, t.target));
         }
     }
