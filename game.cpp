@@ -248,12 +248,12 @@ void convexHull(vector<Point> points)
     {
         Point p = S.top();
         cout << "(" << p.x << ", " << p.y << ")" << endl;
+
         vec2 v;
         v.x = p.x;
         v.y = p.y;
         points_on_hull.push_back(v);
-        //points_on_hull[i].x = p.x;
-        //points_on_hull[i].y = p.y;
+
         S.pop();
 
         i++;
@@ -312,6 +312,7 @@ void Game::update(float deltaTime)
     //Update tanks
     for (Tank& tank : tanks)
     {
+
         if (tank.active)
         {
             //Move tanks according to speed and nudges (see above) also reload
@@ -334,9 +335,6 @@ void Game::update(float deltaTime)
     {
         smoke.tick();
     }
-
-    //Calculate "forcefield" around active tanks
-    forcefield_hull.clear();
 
     //Find first active tank (this loop is a bit disgusting, fix?) 
     //Optimize : solution for comment above is using the alive_tanks list and get the first
@@ -366,49 +364,60 @@ void Game::update(float deltaTime)
     //Calculate convex hull for 'rocket barrier'
     auto begin = chrono::high_resolution_clock::now();
 
+    //Calculate "forcefield" around active tanks
+    //TODO: fix hull clear
+    //forcefield_hull.clear();
 
     tanks.erase(std::remove_if(tanks.begin(), tanks.end(), [](const Tank& tank) { return !tank.active; }), tanks.end());
 
     vector<Point> points;
 
-    for (Tank& tank : tanks)
-    {
-        //points.push_back({ 1, 2 });
+    for (Tank& tank : tanks) {
+
         if (tank.active)
             points.push_back({ tank.get_position().x, tank.get_position().y });
-
-        for (vec2 point_on_hull : points_on_hull)
-            forcefield_hull.push_back(point_on_hull);
-
-        //vec2 endpoint = tanks.at(first_active).position;
-
-        //for (Tank& tank : tanks)
-        //{
-        //    if (tank.active)
-        //    {
-        //        if ((endpoint == point_on_hull) || left_of_line(point_on_hull, endpoint, tank.position))
-        //        {
-        //            endpoint = tank.position;
-        //        }
-        //    }
-        //}
-        //point_on_hull = endpoint;
-
-        //if (endpoint == forcefield_hull.at(0))
-        //{
-        //    break;
-        //}
-
     }
-    //TESTDATA
-    //points.push_back({0, 3} );
-    //points.push_back({ 1, 1 });
-    //points.push_back({ 2, 2 });
-    //points.push_back({ 4, 4 });
-    //points.push_back({ 0, 0 });
+
+    for (vec2& point_on_hull : points_on_hull)
+        forcefield_hull.push_back(point_on_hull);
+
+    forcefield_hull.clear();
+
+
+
     //points.push_back({ 1, 2 });
-    //points.push_back({ 3, 1 });
-    //points.push_back({ 3, 3 });
+
+
+
+    //vec2 endpoint = tanks.at(first_active).position;
+
+    //for (Tank& tank : tanks)
+    //{
+    //    if (tank.active)
+    //    {
+    //        if ((endpoint == point_on_hull) || left_of_line(point_on_hull, endpoint, tank.position))
+    //        {
+    //            endpoint = tank.position;
+    //        }
+    //    }
+    //}
+    //point_on_hull = endpoint;
+
+    //if (endpoint == forcefield_hull.at(0))
+    //{
+    //    break;
+    //}
+
+
+//TESTDATA
+//points.push_back({0, 3} );
+//points.push_back({ 1, 1 });
+//points.push_back({ 2, 2 });
+//points.push_back({ 4, 4 });
+//points.push_back({ 0, 0 });
+//points.push_back({ 1, 2 });
+//points.push_back({ 3, 1 });
+//points.push_back({ 3, 3 });
 
     convexHull(points);
 
