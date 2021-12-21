@@ -18,7 +18,7 @@ constexpr auto health_bar_width = 70;
 constexpr auto max_frames = 2000;
 
 //Global performance timer
-constexpr auto REF_PERFORMANCE = 114757; //UPDATE THIS WITH YOUR REFERENCE PERFORMANCE (see console after 2k frames)
+constexpr auto REF_PERFORMANCE = 71197.8; //UPDATE THIS WITH YOUR REFERENCE PERFORMANCE (see console after 2k frames)
 static timer perf_timer;
 static float duration;
 
@@ -247,7 +247,7 @@ void convexHull(vector<Point> points)
     while (!S.empty())
     {
         Point p = S.top();
-        cout << "(" << p.x << ", " << p.y << ")" << endl;
+        //cout << "(" << p.x << ", " << p.y << ")" << endl;
 
         vec2 v;
         v.x = p.x;
@@ -308,6 +308,14 @@ void Game::update(float deltaTime)
     }
 
 
+    vector<Point> points;
+
+    //Calculate "forcefield" around active tanks
+    //TODO: fix hull clear
+    forcefield_hull.clear();
+
+    //Calculate convex hull for 'rocket barrier'
+    auto begin = chrono::high_resolution_clock::now();
 
     //Update tanks
     for (Tank& tank : tanks)
@@ -315,6 +323,9 @@ void Game::update(float deltaTime)
 
         if (tank.active)
         {
+            //Pushes points for use in convex hull
+            points.push_back({ tank.get_position().x, tank.get_position().y });
+
             //Move tanks according to speed and nudges (see above) also reload
             tank.tick(background_terrain);
 
@@ -329,6 +340,20 @@ void Game::update(float deltaTime)
             }
         }
     }
+    tanks.erase(std::remove_if(tanks.begin(), tanks.end(), [](const Tank& tank) { return !tank.active; }), tanks.end());
+
+
+    for (vec2& point_on_hull : points_on_hull)
+        forcefield_hull.push_back(point_on_hull);
+
+    convexHull(points);
+
+    auto end = chrono::high_resolution_clock::now();
+    auto dur = end - begin;
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(dur).count();
+    cout << ms << endl;
+
+
 
     //Update smoke plumes
     for (Smoke& smoke : smokes)
@@ -348,83 +373,7 @@ void Game::update(float deltaTime)
         }
         first_active++;
     }
-    //vec2 point_on_hull = tanks.at(first_active).position;
-    ////Find left most tank position
-    //for (Tank& tank : tanks)
-    //{
-    //    if (tank.active)
-    //    {
-    //        if (tank.position.x <= point_on_hull.x)
-    //        {
-    //            point_on_hull = tank.position;
-    //        }
-    //    }
-    //}
 
-    //Calculate convex hull for 'rocket barrier'
-    auto begin = chrono::high_resolution_clock::now();
-
-    //Calculate "forcefield" around active tanks
-    //TODO: fix hull clear
-    //forcefield_hull.clear();
-
-    tanks.erase(std::remove_if(tanks.begin(), tanks.end(), [](const Tank& tank) { return !tank.active; }), tanks.end());
-
-    vector<Point> points;
-
-    for (Tank& tank : tanks) {
-
-        if (tank.active)
-            points.push_back({ tank.get_position().x, tank.get_position().y });
-    }
-
-    for (vec2& point_on_hull : points_on_hull)
-        forcefield_hull.push_back(point_on_hull);
-
-    forcefield_hull.clear();
-
-
-
-    //points.push_back({ 1, 2 });
-
-
-
-    //vec2 endpoint = tanks.at(first_active).position;
-
-    //for (Tank& tank : tanks)
-    //{
-    //    if (tank.active)
-    //    {
-    //        if ((endpoint == point_on_hull) || left_of_line(point_on_hull, endpoint, tank.position))
-    //        {
-    //            endpoint = tank.position;
-    //        }
-    //    }
-    //}
-    //point_on_hull = endpoint;
-
-    //if (endpoint == forcefield_hull.at(0))
-    //{
-    //    break;
-    //}
-
-
-//TESTDATA
-//points.push_back({0, 3} );
-//points.push_back({ 1, 1 });
-//points.push_back({ 2, 2 });
-//points.push_back({ 4, 4 });
-//points.push_back({ 0, 0 });
-//points.push_back({ 1, 2 });
-//points.push_back({ 3, 1 });
-//points.push_back({ 3, 3 });
-
-    convexHull(points);
-
-    auto end = chrono::high_resolution_clock::now();
-    auto dur = end - begin;
-    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(dur).count();
-    cout << ms << endl;
     //Update rockets
     for (Rocket& rocket : rockets)
     {
