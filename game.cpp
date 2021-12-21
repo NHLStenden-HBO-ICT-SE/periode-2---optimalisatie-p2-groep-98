@@ -320,7 +320,6 @@ void Game::update(float deltaTime)
     //Update tanks
     for (Tank& tank : tanks)
     {
-
         if (tank.active)
         {
             //Pushes points for use in convex hull
@@ -359,19 +358,6 @@ void Game::update(float deltaTime)
     for (Smoke& smoke : smokes)
     {
         smoke.tick();
-    }
-
-    //Find first active tank (this loop is a bit disgusting, fix?) 
-    //Optimize : solution for comment above is using the alive_tanks list and get the first
-
-    int first_active = 0;
-    for (Tank& tank : tanks)
-    {
-        if (tank.active)
-        {
-            break;
-        }
-        first_active++;
     }
 
     //Update rockets
