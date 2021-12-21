@@ -44,6 +44,7 @@ const static vec2 rocket_size(6, 6);
 
 const static float tank_radius = 3.f;
 const static float rocket_radius = 5.f;
+vector<vec2> points_on_hull;
 
 // -----------------------------------------------------------
 // Initialize the simulation state
@@ -168,8 +169,7 @@ int orientation(Point p, Point q, Point r)
     return (val > 0) ? 1 : 2; // clock or counterclock wise
 }
 
-// A function used by library function qsort() to sort an array of
-// points with respect to the first point
+// A function used by library function qsort() to sort an array of points with respect to the first point
 int compare(const void* vp1, const void* vp2)
 {
     Point* p1 = (Point*)vp1;
@@ -184,11 +184,12 @@ int compare(const void* vp1, const void* vp2)
 }
 
 // Prints convex hull of a set of n points.
-void convexHull(vector<Point> points, int n)
+void convexHull(vector<Point> points)
 {
+    int i = 0;
     // Find the bottommost point
     int ymin = points[0].y, min = 0;
-    for (int i = 1; i < n; i++)
+    for (int i = 1; i < points.size(); i++)
     {
         int y = points[i].y;
 
@@ -207,19 +208,15 @@ void convexHull(vector<Point> points, int n)
     // has larger polar angle (in counterclockwise
     // direction) than p1
     p0 = points[0];
-    qsort(&points[1], n - 1, sizeof(Point), compare);
+    qsort(&points[1], points.size() - 1, sizeof(Point), compare);
 
     // If two or more points make same angle with p0,
     // Remove all but the one that is farthest from p0
-    // Remember that, in above sorting, our criteria was
-    // to keep the farthest point at the end when more than
-    // one points have same angle.
-    int m = 1; // Initialize size of modified array
-    for (int i = 1; i < n; i++)
+    int m = 1;
+    for (int i = 1; i < points.size(); i++)
     {
-        // Keep removing i while angle of i and i+1 is same
-        // with respect to p0
-        while (i < n - 1 && orientation(p0, points[i],
+        // Keep removing i while angle of i and i+1 is same with respect to p0
+        while (i < points.size() - 1 && orientation(p0, points[i],
             points[i + 1]) == 0)
             i++;
 
@@ -228,12 +225,10 @@ void convexHull(vector<Point> points, int n)
         m++;  // Update size of modified array
     }
 
-    // If modified array of points has less than 3 points,
-    // convex hull is not possible
+    // If modified array of points has less than 3 points, convex hull is not possible
     if (m < 3) return;
 
-    // Create an empty stack and push first three points
-    // to it.
+    // Create an empty stack and push first three points to it.
     stack<Point> S;
     S.push(points[0]);
     S.push(points[1]);
@@ -242,9 +237,7 @@ void convexHull(vector<Point> points, int n)
     // Process remaining n-3 points
     for (int i = 3; i < m; i++)
     {
-        // Keep removing top while the angle formed by
-        // points next-to-top, top, and points[i] makes
-        // a non-left turn
+        // Keep removing top while the angle formed by points next-to-top, top, and points[i] makes a non-left turn
         while (S.size() > 1 && orientation(nextToTop(S), S.top(), points[i]) != 2)
             S.pop();
         S.push(points[i]);
@@ -255,7 +248,15 @@ void convexHull(vector<Point> points, int n)
     {
         Point p = S.top();
         cout << "(" << p.x << ", " << p.y << ")" << endl;
+        vec2 v;
+        v.x = p.x;
+        v.y = p.y;
+        points_on_hull.push_back(v);
+        //points_on_hull[i].x = p.x;
+        //points_on_hull[i].y = p.y;
         S.pop();
+
+        i++;
     }
 }
 // -----------------------------------------------------------
@@ -349,18 +350,18 @@ void Game::update(float deltaTime)
         }
         first_active++;
     }
-    vec2 point_on_hull = tanks.at(first_active).position;
-    //Find left most tank position
-    for (Tank& tank : tanks)
-    {
-        if (tank.active)
-        {
-            if (tank.position.x <= point_on_hull.x)
-            {
-                point_on_hull = tank.position;
-            }
-        }
-    }
+    //vec2 point_on_hull = tanks.at(first_active).position;
+    ////Find left most tank position
+    //for (Tank& tank : tanks)
+    //{
+    //    if (tank.active)
+    //    {
+    //        if (tank.position.x <= point_on_hull.x)
+    //        {
+    //            point_on_hull = tank.position;
+    //        }
+    //    }
+    //}
 
     //Calculate convex hull for 'rocket barrier'
     auto begin = chrono::high_resolution_clock::now();
@@ -376,26 +377,27 @@ void Game::update(float deltaTime)
         if (tank.active)
             points.push_back({ tank.get_position().x, tank.get_position().y });
 
+        for (vec2 point_on_hull : points_on_hull)
+            forcefield_hull.push_back(point_on_hull);
 
-        forcefield_hull.push_back(point_on_hull);
-        vec2 endpoint = tanks.at(first_active).position;
+        //vec2 endpoint = tanks.at(first_active).position;
 
-        for (Tank& tank : tanks)
-        {
-            if (tank.active)
-            {
-                if ((endpoint == point_on_hull) || left_of_line(point_on_hull, endpoint, tank.position))
-                {
-                    endpoint = tank.position;
-                }
-            }
-        }
-        point_on_hull = endpoint;
+        //for (Tank& tank : tanks)
+        //{
+        //    if (tank.active)
+        //    {
+        //        if ((endpoint == point_on_hull) || left_of_line(point_on_hull, endpoint, tank.position))
+        //        {
+        //            endpoint = tank.position;
+        //        }
+        //    }
+        //}
+        //point_on_hull = endpoint;
 
-        if (endpoint == forcefield_hull.at(0))
-        {
-            break;
-        }
+        //if (endpoint == forcefield_hull.at(0))
+        //{
+        //    break;
+        //}
 
     }
     //TESTDATA
@@ -408,9 +410,7 @@ void Game::update(float deltaTime)
     //points.push_back({ 3, 1 });
     //points.push_back({ 3, 3 });
 
-
-    int n = sizeof(points) / sizeof(points[0]);
-    convexHull(points, n);
+    convexHull(points);
 
     auto end = chrono::high_resolution_clock::now();
     auto dur = end - begin;
