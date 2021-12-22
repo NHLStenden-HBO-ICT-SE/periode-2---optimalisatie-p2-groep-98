@@ -122,34 +122,30 @@ bool Tmpl8::Game::left_of_line(vec2 line_start, vec2 line_end, vec2 point)
     return ((line_end.x - line_start.x) * (point.y - line_start.y) - (line_end.y - line_start.y) * (point.x - line_start.x)) < 0;
 }
 
-struct Point
-{
-    float x, y;
-};
 
 // A global point needed for  sorting points with reference to  the first point
-Point p0;
+vec2 p0;
 
 // Find next to top in a stack
-Point nextToTop(stack<Point>& S)
+vec2 nextToTop(stack<vec2>& S)
 {
-    Point p = S.top();
+    vec2 p = S.top();
     S.pop();
-    Point res = S.top();
+    vec2 res = S.top();
     S.push(p);
     return res;
 }
 
 // Swap two points
-void swap(Point& p1, Point& p2)
+void swap(vec2& p1, vec2& p2)
 {
-    Point temp = p1;
+    vec2 temp = p1;
     p1 = p2;
     p2 = temp;
 }
 
 // Square of distance between p1 and p2
-int distSq(Point p1, Point p2)
+int distSq(vec2 p1, vec2 p2)
 {
     return (p1.x - p2.x) * (p1.x - p2.x) +
         (p1.y - p2.y) * (p1.y - p2.y);
@@ -160,7 +156,7 @@ int distSq(Point p1, Point p2)
 // 0 --> p, q and r are collinear
 // 1 --> Clockwise
 // 2 --> Counterclockwise
-int orientation(Point p, Point q, Point r)
+int orientation(vec2 p, vec2 q, vec2 r)
 {
     int val = (q.y - p.y) * (r.x - q.x) -
         (q.x - p.x) * (r.y - q.y);
@@ -172,8 +168,8 @@ int orientation(Point p, Point q, Point r)
 // A function used by library function qsort() to sort an array of points with respect to the first point
 int compare(const void* vp1, const void* vp2)
 {
-    Point* p1 = (Point*)vp1;
-    Point* p2 = (Point*)vp2;
+    vec2* p1 = (vec2*)vp1;
+    vec2* p2 = (vec2*)vp2;
 
     // Find orientation
     int o = orientation(p0, *p1, *p2);
@@ -184,31 +180,31 @@ int compare(const void* vp1, const void* vp2)
 }
 
 // Prints convex hull of a set of n points.
-void convexHull(vector<Point> points)
+void convexHull(vector<vec2> points)
 {
     int i = 0;
     // Find the bottommost point
-    int ymin = points[0].y, min = 0;
+    int ymin = points.at(0).y, min = 0;
     for (int i = 1; i < points.size(); i++)
     {
-        int y = points[i].y;
+        int y = points.at(i).y;
 
         // Pick the bottom-most or chose the left
         // most point in case of tie
         if ((y < ymin) || (ymin == y &&
-            points[i].x < points[min].x))
-            ymin = points[i].y, min = i;
+            points.at(i).x < points.at(min).x))
+            ymin = points.at(i).y, min = i;
     }
 
     // Place the bottom-most point at first position
-    swap(points[0], points[min]);
+    swap(points.at(0), points.at(min));
 
     // Sort n-1 points with respect to the first point.
     // A point p1 comes before p2 in sorted output if p2
     // has larger polar angle (in counterclockwise
     // direction) than p1
-    p0 = points[0];
-    qsort(&points[1], points.size() - 1, sizeof(Point), compare);
+    p0 = points.at(0);
+    qsort(&points.at(1), points.size() - 1, sizeof(vec2), compare);
 
     // If two or more points make same angle with p0,
     // Remove all but the one that is farthest from p0
@@ -216,12 +212,12 @@ void convexHull(vector<Point> points)
     for (int i = 1; i < points.size(); i++)
     {
         // Keep removing i while angle of i and i+1 is same with respect to p0
-        while (i < points.size() - 1 && orientation(p0, points[i],
-            points[i + 1]) == 0)
+        while (i < points.size() - 1 && orientation(p0, points.at(i),
+            points.at(i + 1)) == 0)
             i++;
 
 
-        points[m] = points[i];
+        points.at(m) = points.at(i);
         m++;  // Update size of modified array
     }
 
@@ -229,31 +225,27 @@ void convexHull(vector<Point> points)
     if (m < 3) return;
 
     // Create an empty stack and push first three points to it.
-    stack<Point> S;
-    S.push(points[0]);
-    S.push(points[1]);
-    S.push(points[2]);
+    stack<vec2> S;
+    S.push(points.at(0));
+    S.push(points.at(1));
+    S.push(points.at(2));
 
     // Process remaining n-3 points
     for (int i = 3; i < m; i++)
     {
         // Keep removing top while the angle formed by points next-to-top, top, and points[i] makes a non-left turn
-        while (S.size() > 1 && orientation(nextToTop(S), S.top(), points[i]) != 2)
+        while (S.size() > 1 && orientation(nextToTop(S), S.top(), points.at(i)) != 2)
             S.pop();
-        S.push(points[i]);
+        S.push(points.at(i));
     }
 
     // Now stack has the output points, print contents of stack
     while (!S.empty())
     {
-        Point p = S.top();
+        vec2 p = S.top();
         //cout << "(" << p.x << ", " << p.y << ")" << endl;
 
-        vec2 v;
-        v.x = p.x;
-        v.y = p.y;
-        points_on_hull.push_back(v);
-
+        points_on_hull.push_back(p);
         S.pop();
 
         i++;
@@ -308,11 +300,11 @@ void Game::update(float deltaTime)
     }
 
 
-    vector<Point> points;
+    vector<vec2> points;
 
-    //Calculate "forcefield" around active tanks
-    //TODO: fix hull clear
+    //Calculate "forcefield" around active tanks, clears forcefield here
     forcefield_hull.clear();
+    points_on_hull.clear();
 
     //Calculate convex hull for 'rocket barrier'
     auto begin = chrono::high_resolution_clock::now();
@@ -341,18 +333,16 @@ void Game::update(float deltaTime)
     }
     tanks.erase(std::remove_if(tanks.begin(), tanks.end(), [](const Tank& tank) { return !tank.active; }), tanks.end());
 
-
+    //Calculates points_on_hull
+    convexHull(points);
+    //Draws all points of the forcefield
     for (vec2& point_on_hull : points_on_hull)
         forcefield_hull.push_back(point_on_hull);
-
-    convexHull(points);
 
     auto end = chrono::high_resolution_clock::now();
     auto dur = end - begin;
     auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(dur).count();
     cout << ms << endl;
-
-
 
     //Update smoke plumes
     for (Smoke& smoke : smokes)
