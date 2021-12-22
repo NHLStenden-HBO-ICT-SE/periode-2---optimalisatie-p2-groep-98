@@ -1,5 +1,8 @@
 #include "precomp.h" // include (only) this in every .cpp file
 #include <chrono>
+#include <iostream>
+#include <stack>
+#include <stdlib.h>
 
 constexpr auto num_tanks_blue = 2048;
 constexpr auto num_tanks_red = 2048;
@@ -15,7 +18,7 @@ constexpr auto health_bar_width = 70;
 constexpr auto max_frames = 2000;
 
 //Global performance timer
-constexpr auto REF_PERFORMANCE = 114757; //UPDATE THIS WITH YOUR REFERENCE PERFORMANCE (see console after 2k frames)
+constexpr auto REF_PERFORMANCE = 71197.8; //UPDATE THIS WITH YOUR REFERENCE PERFORMANCE (see console after 2k frames)
 static timer perf_timer;
 static float duration;
 
@@ -41,6 +44,7 @@ const static vec2 rocket_size(6, 6);
 
 const static float tank_radius = 3.f;
 const static float rocket_radius = 5.f;
+vector<vec2> points_on_hull;
 
 // -----------------------------------------------------------
 // Initialize the simulation state
@@ -118,6 +122,135 @@ bool Tmpl8::Game::left_of_line(vec2 line_start, vec2 line_end, vec2 point)
     return ((line_end.x - line_start.x) * (point.y - line_start.y) - (line_end.y - line_start.y) * (point.x - line_start.x)) < 0;
 }
 
+
+// A global point needed for  sorting points with reference to  the first point
+vec2 p0;
+
+// Find next to top in a stack
+vec2 nextToTop(stack<vec2>& S)
+{
+    vec2 p = S.top();
+    S.pop();
+    vec2 res = S.top();
+    S.push(p);
+    return res;
+}
+
+// Swap two points
+void swap(vec2& p1, vec2& p2)
+{
+    vec2 temp = p1;
+    p1 = p2;
+    p2 = temp;
+}
+
+// Square of distance between p1 and p2
+int distSq(vec2 p1, vec2 p2)
+{
+    return (p1.x - p2.x) * (p1.x - p2.x) +
+        (p1.y - p2.y) * (p1.y - p2.y);
+}
+
+// To find orientation of ordered triplet (p, q, r).
+// The function returns following values
+// 0 --> p, q and r are collinear
+// 1 --> Clockwise
+// 2 --> Counterclockwise
+int orientation(vec2 p, vec2 q, vec2 r)
+{
+    int val = (q.y - p.y) * (r.x - q.x) -
+        (q.x - p.x) * (r.y - q.y);
+
+    if (val == 0) return 0;  // collinear
+    return (val > 0) ? 1 : 2; // clock or counterclock wise
+}
+
+// A function used by library function qsort() to sort an array of points with respect to the first point
+int compare(const void* vp1, const void* vp2)
+{
+    vec2* p1 = (vec2*)vp1;
+    vec2* p2 = (vec2*)vp2;
+
+    // Find orientation
+    int o = orientation(p0, *p1, *p2);
+    if (o == 0)
+        return (distSq(p0, *p2) >= distSq(p0, *p1)) ? -1 : 1;
+
+    return (o == 2) ? -1 : 1;
+}
+
+// Prints convex hull of a set of n points.
+void convexHull(vector<vec2> points)
+{
+    int i = 0;
+    // Find the bottommost point
+    int ymin = points.at(0).y, min = 0;
+    for (int i = 1; i < points.size(); i++)
+    {
+        int y = points.at(i).y;
+
+        // Pick the bottom-most or chose the left
+        // most point in case of tie
+        if ((y < ymin) || (ymin == y &&
+            points.at(i).x < points.at(min).x))
+            ymin = points.at(i).y, min = i;
+    }
+
+    // Place the bottom-most point at first position
+    swap(points.at(0), points.at(min));
+
+    // Sort n-1 points with respect to the first point.
+    // A point p1 comes before p2 in sorted output if p2
+    // has larger polar angle (in counterclockwise
+    // direction) than p1
+    p0 = points.at(0);
+    qsort(&points.at(1), points.size() - 1, sizeof(vec2), compare);
+
+    // If two or more points make same angle with p0,
+    // Remove all but the one that is farthest from p0
+    int m = 1;
+    for (int i = 1; i < points.size(); i++)
+    {
+        // Keep removing i while angle of i and i+1 is same with respect to p0
+        while (i < points.size() - 1 && orientation(p0, points.at(i),
+            points.at(i + 1)) == 0)
+            i++;
+
+
+        points.at(m) = points.at(i);
+        m++;  // Update size of modified array
+    }
+
+    // If modified array of points has less than 3 points, convex hull is not possible
+    if (m < 3) return;
+
+    // Create an empty stack and push first three points to it.
+    stack<vec2> S;
+    S.push(points.at(0));
+    S.push(points.at(1));
+    S.push(points.at(2));
+
+    // Process remaining n-3 points
+    for (int i = 3; i < m; i++)
+    {
+        // Keep removing top while the angle formed by points next-to-top, top, and points[i] makes a non-left turn
+        while (S.size() > 1 && orientation(nextToTop(S), S.top(), points.at(i)) != 2)
+            S.pop();
+        S.push(points.at(i));
+    }
+
+    // Now stack has the output points, print contents of stack
+    while (!S.empty())
+    {
+        vec2 p = S.top();
+        //cout << "(" << p.x << ", " << p.y << ")" << endl;
+
+        points_on_hull.push_back(p);
+        S.pop();
+
+        i++;
+    }
+}
 // -----------------------------------------------------------
 // Update the game state:
 // Move all objects
@@ -169,14 +302,25 @@ void Game::update(float deltaTime)
             }
         }
     }
-    
 
+
+    vector<vec2> points;
+
+    //Calculate "forcefield" around active tanks, clears forcefield here
+    forcefield_hull.clear();
+    points_on_hull.clear();
+
+    //Calculate convex hull for 'rocket barrier'
+    auto begin = chrono::high_resolution_clock::now();
 
     //Update tanks
     for (Tank& tank : tanks)
     {
         if (tank.active)
         {
+            //Pushes points for use in convex hull
+            points.push_back({ tank.get_position().x, tank.get_position().y });
+
             //Move tanks according to speed and nudges (see above) also reload
             tank.tick(background_terrain);
 
@@ -191,6 +335,18 @@ void Game::update(float deltaTime)
             }
         }
     }
+    tanks.erase(std::remove_if(tanks.begin(), tanks.end(), [](const Tank& tank) { return !tank.active; }), tanks.end());
+
+    //Calculates points_on_hull
+    convexHull(points);
+    //Draws all points of the forcefield
+    for (vec2& point_on_hull : points_on_hull)
+        forcefield_hull.push_back(point_on_hull);
+
+    auto end = chrono::high_resolution_clock::now();
+    auto dur = end - begin;
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(dur).count();
+    cout << ms << endl;
 
     //Update smoke plumes
     for (Smoke& smoke : smokes)
@@ -198,66 +354,6 @@ void Game::update(float deltaTime)
         smoke.tick();
     }
 
-    //Calculate "forcefield" around active tanks
-    forcefield_hull.clear();
-
-    //Find first active tank (this loop is a bit disgusting, fix?) 
-    //Optimize : solution for comment above is using the alive_tanks list and get the first
-    int first_active = 0;
-    for (Tank& tank : tanks)
-    {
-        if (tank.active)
-        {
-            break;
-        }
-        first_active++;
-    }
-    vec2 point_on_hull = tanks.at(first_active).position;
-    //Find left most tank position
-    for (Tank& tank : tanks)
-    {
-        if (tank.active)
-        {
-            if (tank.position.x <= point_on_hull.x)
-            {
-                point_on_hull = tank.position;
-            }
-        }
-    }
-
-    //Calculate convex hull for 'rocket barrier'
-    auto begin = chrono::high_resolution_clock::now();
-
-   
-    tanks.erase(std::remove_if(tanks.begin(), tanks.end(), [](const Tank& tank) { return !tank.active; }), tanks.end());
-    for (Tank& tank : tanks)
-    {
-        
-            forcefield_hull.push_back(point_on_hull);
-            vec2 endpoint = tanks.at(first_active).position;
-
-            for (Tank& tank : tanks)
-            {
-                if (tank.active)
-                {
-                    if ((endpoint == point_on_hull) || left_of_line(point_on_hull, endpoint, tank.position))
-                    {
-                        endpoint = tank.position;
-                    }
-                }
-            }
-            point_on_hull = endpoint;
-
-            if (endpoint == forcefield_hull.at(0))
-            {
-                break;
-            }
-        
-    }
-    auto end = chrono::high_resolution_clock::now();
-    auto dur = end - begin;
-    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(dur).count();
-    cout << ms << endl;
     //Update rockets
     for (Rocket& rocket : rockets)
     {
@@ -285,7 +381,7 @@ void Game::update(float deltaTime)
     //Hint: A point to convex hull intersection test might be better here? :) (Disable if outside)
 
     //Optimize: active_rocket list 
-    
+
     for (Rocket& rocket : rockets)
     {
         if (rocket.active)
@@ -456,37 +552,37 @@ void Game::draw()
     }
 
     //Draw sorted health bars
-    
-        const int NUM_TANKS = tanks.size();
+
+    const int NUM_TANKS = tanks.size();
 
 
-        vector<Tank> toSort;
-        for (Tank t : tanks) {
-            toSort.push_back(t);
+    vector<Tank> toSort;
+    for (Tank t : tanks) {
+        toSort.push_back(t);
+    }
+
+    mergeSort(toSort, 0, NUM_TANKS - 1, "health");
+    //toSort.erase(std::remove_if(toSort.begin(), toSort.end(), [](Tank* tank) { return !tank->active; }), toSort.end());
+
+    std::vector<Tank> sorted_tanks_blue;
+    std::vector<Tank> sorted_tanks_red;
+    for (int i = 0; i < toSort.size(); i++) {
+        Tank current_tank = toSort.at(i);
+
+        if (current_tank.allignment == BLUE) {
+            sorted_tanks_blue.emplace_back(current_tank);
         }
-        
-        mergeSort(toSort, 0, NUM_TANKS - 1, "health");
-        //toSort.erase(std::remove_if(toSort.begin(), toSort.end(), [](Tank* tank) { return !tank->active; }), toSort.end());
+        else {
+            sorted_tanks_red.emplace_back(current_tank);
 
-        std::vector<Tank> sorted_tanks_blue;
-        std::vector<Tank> sorted_tanks_red;
-        for (int i = 0; i < toSort.size(); i++) {
-            Tank current_tank = toSort.at(i);
-
-            if (current_tank.allignment == BLUE) {
-                sorted_tanks_blue.emplace_back(current_tank);
-            }
-            else {
-                sorted_tanks_red.emplace_back(current_tank);
-
-            }
         }
-        draw_health_bars(sorted_tanks_blue, 0);
+    }
+    draw_health_bars(sorted_tanks_blue, 0);
 
-        draw_health_bars(sorted_tanks_red, 1);
-        
+    draw_health_bars(sorted_tanks_red, 1);
 
-        
+
+
 }
 
 
@@ -525,8 +621,9 @@ void Tmpl8::Game::draw_health_bars(const std::vector<Tank>& sorted_tanks, const 
 
         float health_fraction = (1 - ((double)sorted_tanks.at(i).health / (double)tank_max_health));
 
-        if (team == 0) { 
-            screen->bar(health_bar_start_x + (int)((double)health_bar_width * health_fraction), health_bar_start_y, health_bar_end_x, health_bar_end_y, GREENMASK); }
+        if (team == 0) {
+            screen->bar(health_bar_start_x + (int)((double)health_bar_width * health_fraction), health_bar_start_y, health_bar_end_x, health_bar_end_y, GREENMASK);
+        }
         else { screen->bar(health_bar_start_x, health_bar_start_y, health_bar_end_x - (int)((double)health_bar_width * health_fraction), health_bar_end_y, GREENMASK); }
     }
 }
