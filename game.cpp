@@ -50,7 +50,9 @@ const static vec2 rocket_size(6, 6);
 const static float tank_radius = 3.f;
 const static float rocket_radius = 5.f;
 vector<vec2> points_on_hull;
-ThreadPool* pool = new ThreadPool(std::thread::hardware_concurrency()*2);
+
+const int num_of_threads = std::thread::hardware_concurrency() * 2;
+ThreadPool* pool = new ThreadPool(num_of_threads);
 
 
 // -----------------------------------------------------------
