@@ -339,7 +339,7 @@ void Game::update(float deltaTime)
     auto t_end = std::chrono::high_resolution_clock::now();
 
     double elapsed_time_ms = std::chrono::duration<double, std::milli>(t_end - t_start).count();
-    cout << "TOTAL Collisions QuadTree: " << collisions << " in " << elapsed_time_ms << "ms" << endl;
+    //cout << "TOTAL Collisions QuadTree: " << collisions << " in " << elapsed_time_ms << "ms" << endl;
 
 
     /*for (Tank& tank : tanks)
