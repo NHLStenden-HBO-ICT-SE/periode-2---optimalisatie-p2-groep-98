@@ -19,7 +19,7 @@ constexpr auto health_bar_width = 70;
 constexpr auto max_frames = 2000;
 
 //Global performance timer
-constexpr auto REF_PERFORMANCE = 71197.8; //UPDATE THIS WITH YOUR REFERENCE PERFORMANCE (see console after 2k frames)
+constexpr auto REF_PERFORMANCE = 99619; //UPDATE THIS WITH YOUR REFERENCE PERFORMANCE (see console after 2k frames)
 static timer perf_timer;
 static float duration;
 
@@ -313,7 +313,7 @@ void Game::update(float deltaTime)
                     vec2 dir = t1->get_position() - t2->get_position();
                     float dir_squared_len = dir.sqr_length();
                     float col_squared_len = (t1->get_collision_radius() + t2->get_collision_radius());
-                    col_squared_len = col_squared_len * col_squared_len;
+                    col_squared_len *= col_squared_len ;
 
                     if (dir_squared_len < col_squared_len)
                     {
@@ -337,7 +337,7 @@ void Game::update(float deltaTime)
     auto t_end = std::chrono::high_resolution_clock::now();
 
     double elapsed_time_ms = std::chrono::duration<double, std::milli>(t_end - t_start).count();
-    //cout << "TOTAL Collisions QuadTree: " << collisions << " in " << elapsed_time_ms << "ms" << endl;
+    cout << "TOTAL Collisions QuadTree: " << collisions << " in " << elapsed_time_ms << "ms" << endl;
 
 
     /*for (Tank& tank : tanks)
