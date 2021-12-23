@@ -3,6 +3,7 @@
 #include <iostream>
 #include <stack>
 #include <stdlib.h>
+#include <map>
 
 constexpr auto num_tanks_blue = 2048;
 constexpr auto num_tanks_red = 2048;
@@ -39,12 +40,18 @@ static Sprite smoke(smoke_img, 4);
 static Sprite explosion(explosion_img, 9);
 static Sprite particle_beam_sprite(particle_beam_img, 3);
 
+
+
+
+
 const static vec2 tank_size(7, 9);
 const static vec2 rocket_size(6, 6);
 
 const static float tank_radius = 3.f;
 const static float rocket_radius = 5.f;
 vector<vec2> points_on_hull;
+ThreadPool* pool = new ThreadPool(16);
+
 
 // -----------------------------------------------------------
 // Initialize the simulation state
@@ -83,6 +90,11 @@ void Game::init()
     particle_beams.push_back(Particle_beam(vec2(590, 327), vec2(100, 50), &particle_beam_sprite, particle_beam_hit_value));
     particle_beams.push_back(Particle_beam(vec2(64, 64), vec2(100, 50), &particle_beam_sprite, particle_beam_hit_value));
     particle_beams.push_back(Particle_beam(vec2(1200, 600), vec2(100, 50), &particle_beam_sprite, particle_beam_hit_value));
+
+
+    //Quad tree for collisions
+    tree = new QuadTree(0, 0, 0, 125, 125, "root", nullptr);
+
 }
 
 // -----------------------------------------------------------
@@ -274,17 +286,65 @@ void Game::update(float deltaTime)
         }
     }
 
+
+
+
+    
+    tree = new QuadTree(0, 0, 0, 1500, 1500, "root", nullptr);
+    for (Tank& t : tanks) {
+        //cout << t.position.x << ": " << t.position.y << endl;
+        
+        tree->addObject(t);
+    }
+    vector<vector<Tank*>> collist = tree->getCollisionReadyNodes();
+    auto t_start = std::chrono::high_resolution_clock::now();
+    
+ 
+    int collisions = 0;
+    
+    vector<future<void>> threads;
+    for (size_t i = 0; i < collist.size(); i++)
+    {
+        threads.push_back(pool->enqueue([&, i]() {
+            vector<Tank*> col = collist.at(i);
+            for (Tank* t1 : col) {
+                for (Tank* t2 : col) {
+                    if (t1 == t2) continue;
+                    vec2 dir = t1->get_position() - t2->get_position();
+                    float dir_squared_len = dir.sqr_length();
+                    float col_squared_len = (t1->get_collision_radius() + t2->get_collision_radius());
+                    col_squared_len = col_squared_len * col_squared_len;
+
+                    if (dir_squared_len < col_squared_len)
+                    {
+                        t1->push(dir.normalized(), 1.f);
+                        collisions++;
+
+                        // cout << t1->x << " : " << t1->y << " Collides with " << t2->x << " : " << t2->y << endl;;
+
+                    }
+                }
+            }
+            }));
+    }
     //Check tank collision and nudge tanks away from each other
-    //Optimize, create a list with active tanks instead of checking in the tanks list
+    
+
+    for (future<void> &th : threads) {
+        th.wait();
+    }
+
+    auto t_end = std::chrono::high_resolution_clock::now();
+
+    double elapsed_time_ms = std::chrono::duration<double, std::milli>(t_end - t_start).count();
+    //cout << "TOTAL Collisions QuadTree: " << collisions << " in " << elapsed_time_ms << "ms" << endl;
 
 
-    for (Tank& tank : tanks)
+    /*for (Tank& tank : tanks)
     {
         if (tank.active)
         {
-            //use the active tank list
-            //What about a grid system where the  other_tank 's are only the tanks in the same grid block.
-            //Name of the algorithm: The separate axis theorem
+            
             for (Tank& other_tank : tanks)
             {
                 if (&tank == &other_tank || !other_tank.active) continue;
@@ -301,7 +361,7 @@ void Game::update(float deltaTime)
                 }
             }
         }
-    }
+    }*/
 
 
     vector<vec2> points;
@@ -312,7 +372,6 @@ void Game::update(float deltaTime)
 
     //Calculate convex hull for 'rocket barrier'
     auto begin = chrono::high_resolution_clock::now();
-
     //Update tanks
     for (Tank& tank : tanks)
     {
@@ -346,7 +405,7 @@ void Game::update(float deltaTime)
     auto end = chrono::high_resolution_clock::now();
     auto dur = end - begin;
     auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(dur).count();
-    cout << ms << endl;
+    //cout << ms << endl;
 
     //Update smoke plumes
     for (Smoke& smoke : smokes)

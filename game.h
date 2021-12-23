@@ -1,4 +1,5 @@
 #pragma once
+#include "QuadTree.h"
 
 namespace Tmpl8
 {
@@ -44,6 +45,8 @@ namespace Tmpl8
 
     private:
         Surface* screen;
+
+        QuadTree* tree;
 
         vector<Tank> tanks;
         vector<Rocket> rockets;
