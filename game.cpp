@@ -18,7 +18,7 @@ constexpr auto health_bar_width = 70;
 constexpr auto max_frames = 2000;
 
 //Global performance timer
-constexpr auto REF_PERFORMANCE = 114757; //UPDATE THIS WITH YOUR REFERENCE PERFORMANCE (see console after 2k frames)
+constexpr auto REF_PERFORMANCE = 71197.8; //UPDATE THIS WITH YOUR REFERENCE PERFORMANCE (see console after 2k frames)
 static timer perf_timer;
 static float duration;
 
@@ -122,7 +122,6 @@ bool Tmpl8::Game::left_of_line(vec2 line_start, vec2 line_end, vec2 point)
 }
 
 
-
 vec2 p0;
 vector<vec2> points_on_hull;
 
@@ -215,12 +214,11 @@ void convexHull(vector<vec2> points)
 
 
         points.at(m) = points.at(i);
-        m++;  // Update size of modified array
+        m++;
     }
 
     // If modified array of points has less than 3 points, convex hull is not possible
-    if (m < 3) 
-        return;
+    if (m < 3) return;
 
     stack<vec2> S;
     S.push(points.at(0));
@@ -236,7 +234,7 @@ void convexHull(vector<vec2> points)
         S.push(points.at(i));
     }
 
-    // Stack has output points
+    // Result stack has the output points
     while (!S.empty())
     {
         vec2 p = S.top();
@@ -261,8 +259,12 @@ void Game::update(float deltaTime)
     //Initializing routes here so it gets counted for performance..
     if (frame_count == 0)
     {
-        for (Tank& t : tanks)
-        {
+        for (Tank& t : tanks) {
+
+            /*pool->enqueue([&]() {
+                t.set_route(background_terrain.get_route(t, t.target));
+                });
+            */
             t.set_route(background_terrain.get_route(t, t.target));
         }
     }
