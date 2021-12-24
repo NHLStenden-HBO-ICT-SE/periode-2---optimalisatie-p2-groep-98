@@ -19,7 +19,7 @@ constexpr auto health_bar_width = 70;
 constexpr auto max_frames = 2000;
 
 //Global performance timer
-constexpr auto REF_PERFORMANCE = 71197.8; //UPDATE THIS WITH YOUR REFERENCE PERFORMANCE (see console after 2k frames)
+constexpr auto REF_PERFORMANCE = 99619; //UPDATE THIS WITH YOUR REFERENCE PERFORMANCE (see console after 2k frames)
 static timer perf_timer;
 static float duration;
 
@@ -45,7 +45,9 @@ const static vec2 rocket_size(6, 6);
 
 const static float tank_radius = 3.f;
 const static float rocket_radius = 5.f;
-ThreadPool* pool = new ThreadPool(16);
+
+const int num_of_threads = std::thread::hardware_concurrency() * 2;
+ThreadPool* pool = new ThreadPool(num_of_threads);
 
 
 // -----------------------------------------------------------
@@ -301,7 +303,7 @@ void Game::update(float deltaTime)
                     vec2 dir = t1->get_position() - t2->get_position();
                     float dir_squared_len = dir.sqr_length();
                     float col_squared_len = (t1->get_collision_radius() + t2->get_collision_radius());
-                    col_squared_len = col_squared_len * col_squared_len;
+                    col_squared_len *= col_squared_len ;
 
                     if (dir_squared_len < col_squared_len)
                     {
