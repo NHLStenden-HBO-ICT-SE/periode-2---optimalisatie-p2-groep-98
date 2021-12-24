@@ -267,7 +267,8 @@ void Game::update(float deltaTime)
                 });
             */
 
-            aStarSearch(background_terrain, t, t.target);
+
+            aStarSearch(t, t.target);
             //t.set_route(background_terrain.get_route(t, t.target));
         }
     }

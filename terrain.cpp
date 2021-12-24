@@ -2,15 +2,19 @@
 #include "precomp.h"
 #include <stack>
 #include <set>
-
-#define ROW 9
-#define COL 10
+#define ROW 45
+#define COL 80
 
 namespace fs = std::filesystem;
 namespace Tmpl8
 {
+    static constexpr size_t terrain_width = 80;
+    static constexpr size_t terrain_height = 45;
+    std::array<std::array<TerrainTile, terrain_width>, terrain_height> tiles;
+
     Terrain::Terrain()
     {
+
         //Load in terrain sprites
         grass_img = std::make_unique<Surface>("assets/tile_grass.png");
         forest_img = std::make_unique<Surface>("assets/tile_forest.png");
@@ -49,21 +53,27 @@ namespace Tmpl8
                     switch (std::toupper(terrain_line.at(collumn)))
                     {
                     case 'G':
+                        //terrain_grid[row][collumn] = 1;
                         tiles.at(row).at(collumn).tile_type = TileType::GRASS;
                         break;
                     case 'F':
+                        //terrain_grid[row][collumn] = 1;
                         tiles.at(row).at(collumn).tile_type = TileType::FORREST;
                         break;
                     case 'R':
+                        //terrain_grid[row][collumn] = 1;
                         tiles.at(row).at(collumn).tile_type = TileType::ROCKS;
                         break;
                     case 'M':
+                        //terrain_grid[row][collumn] = 0;
                         tiles.at(row).at(collumn).tile_type = TileType::MOUNTAINS;
                         break;
                     case 'W':
+                        //terrain_grid[row][collumn] = 0;
                         tiles.at(row).at(collumn).tile_type = TileType::WATER;
                         break;
                     default:
+                        //terrain_grid[row][collumn] = 1;
                         tiles.at(row).at(collumn).tile_type = TileType::GRASS;
                         break;
                     }
@@ -159,10 +169,10 @@ namespace Tmpl8
 
     // A Utility Function to check whether the given cell is
     // blocked or not
-    bool isUnBlocked(int grid[][COL], int row, int col)
+    bool isUnBlocked(std::array<std::array<TerrainTile, terrain_width>, terrain_height> tiles, int row, int col)
     {
         // Returns true if the cell is not blocked else false
-        if (grid[row][col] == 1)
+        if (tiles.at(row).at(col).tile_type != TileType::MOUNTAINS || tiles.at(row).at(col).tile_type != TileType::WATER)
             return (true);
         else
             return (false);
@@ -170,30 +180,30 @@ namespace Tmpl8
 
     // A Utility Function to check whether destination cell has
     // been reached or not
-    bool isDestination(int row, int col, Pair dest)
+    bool isDestination(int row, int col, vec2 dest)
     {
-        if (row == dest.first && col == dest.second)
+        if (row == dest.x && col == dest.y)
             return (true);
         else
             return (false);
     }
 
     // A Utility Function to calculate the 'h' heuristics.
-    double calculateHValue(int row, int col, Pair dest)
+    double calculateHValue(int row, int col, vec2 dest)
     {
         // Return using the distance formula
         return ((double)sqrt(
-            (row - dest.first) * (row - dest.first)
-            + (col - dest.second) * (col - dest.second)));
+            (row - dest.x) * (row - dest.x)
+            + (col - dest.y) * (col - dest.y)));
     }
 
     // A Utility Function to trace the path from the source
     // to destination
-    void tracePath(cell cellDetails[][COL], Pair dest)
+    void tracePath(cell cellDetails[][COL], vec2 dest)
     {
         printf("\nThe Path is ");
-        int row = dest.first;
-        int col = dest.second;
+        int row = dest.x;
+        int col = dest.y;
 
         stack<Pair> Path;
 
@@ -219,30 +229,30 @@ namespace Tmpl8
     // A Function to find the shortest path between
     // a given source cell to a destination cell according
     // to A* Search Algorithm
-    void aStarSearch(int grid[][COL], Pair src, Pair dest)
+    void aStarSearch(Tank src, vec2 dest)
     {
         // If the source is out of range
-        if (isValid(src.first, src.second) == false) {
+        if (isValid(src.get_position().x, src.get_position().y) == false) {
             printf("Source is invalid\n");
             return;
         }
 
         // If the destination is out of range
-        if (isValid(dest.first, dest.second) == false) {
+        if (isValid(dest.x, dest.y) == false) {
             printf("Destination is invalid\n");
             return;
         }
 
         // Either the source or the destination is blocked
-        if (isUnBlocked(grid, src.first, src.second) == false
-            || isUnBlocked(grid, dest.first, dest.second)
+        if (isUnBlocked(tiles, src.get_position().x, src.get_position().y) == false
+            || isUnBlocked(tiles, dest.x, dest.y)
             == false) {
             printf("Source or the destination is blocked\n");
             return;
         }
 
         // If the destination cell is the same as source cell
-        if (isDestination(src.first, src.second, dest)
+        if (isDestination(src.get_position().x, src.get_position().y, dest)
             == true) {
             printf("We are already at the destination\n");
             return;
@@ -271,7 +281,7 @@ namespace Tmpl8
         }
 
         // Initialising the parameters of the starting node
-        i = src.first, j = src.second;
+        i = src.get_position().x, j = src.get_position().y;
         cellDetails[i][j].f = 0.0;
         cellDetails[i][j].g = 0.0;
         cellDetails[i][j].h = 0.0;
@@ -350,7 +360,7 @@ namespace Tmpl8
                 // list or if it is blocked, then ignore it.
                 // Else do the following
                 else if (closedList[i - 1][j] == false
-                    && isUnBlocked(grid, i - 1, j)
+                    && isUnBlocked(tiles, i - 1, j)
                     == true) {
                     gNew = cellDetails[i][j].g + 1.0;
                     hNew = calculateHValue(i - 1, j, dest);
@@ -398,7 +408,7 @@ namespace Tmpl8
                 // list or if it is blocked, then ignore it.
                 // Else do the following
                 else if (closedList[i + 1][j] == false
-                    && isUnBlocked(grid, i + 1, j)
+                    && isUnBlocked(tiles, i + 1, j)
                     == true) {
                     gNew = cellDetails[i][j].g + 1.0;
                     hNew = calculateHValue(i + 1, j, dest);
@@ -446,7 +456,7 @@ namespace Tmpl8
                 // list or if it is blocked, then ignore it.
                 // Else do the following
                 else if (closedList[i][j + 1] == false
-                    && isUnBlocked(grid, i, j + 1)
+                    && isUnBlocked(tiles, i, j + 1)
                     == true) {
                     gNew = cellDetails[i][j].g + 1.0;
                     hNew = calculateHValue(i, j + 1, dest);
@@ -495,7 +505,7 @@ namespace Tmpl8
                 // list or if it is blocked, then ignore it.
                 // Else do the following
                 else if (closedList[i][j - 1] == false
-                    && isUnBlocked(grid, i, j - 1)
+                    && isUnBlocked(tiles, i, j - 1)
                     == true) {
                     gNew = cellDetails[i][j].g + 1.0;
                     hNew = calculateHValue(i, j - 1, dest);
@@ -545,7 +555,7 @@ namespace Tmpl8
                 // list or if it is blocked, then ignore it.
                 // Else do the following
                 else if (closedList[i - 1][j + 1] == false
-                    && isUnBlocked(grid, i - 1, j + 1)
+                    && isUnBlocked(tiles, i - 1, j + 1)
                     == true) {
                     gNew = cellDetails[i][j].g + 1.414;
                     hNew = calculateHValue(i - 1, j + 1, dest);
@@ -595,7 +605,7 @@ namespace Tmpl8
                 // list or if it is blocked, then ignore it.
                 // Else do the following
                 else if (closedList[i - 1][j - 1] == false
-                    && isUnBlocked(grid, i - 1, j - 1)
+                    && isUnBlocked(tiles, i - 1, j - 1)
                     == true) {
                     gNew = cellDetails[i][j].g + 1.414;
                     hNew = calculateHValue(i - 1, j - 1, dest);
@@ -644,7 +654,7 @@ namespace Tmpl8
                 // list or if it is blocked, then ignore it.
                 // Else do the following
                 else if (closedList[i + 1][j + 1] == false
-                    && isUnBlocked(grid, i + 1, j + 1)
+                    && isUnBlocked(tiles, i + 1, j + 1)
                     == true) {
                     gNew = cellDetails[i][j].g + 1.414;
                     hNew = calculateHValue(i + 1, j + 1, dest);
@@ -694,7 +704,7 @@ namespace Tmpl8
                 // list or if it is blocked, then ignore it.
                 // Else do the following
                 else if (closedList[i + 1][j - 1] == false
-                    && isUnBlocked(grid, i + 1, j - 1)
+                    && isUnBlocked(tiles, i + 1, j - 1)
                     == true) {
                     gNew = cellDetails[i][j].g + 1.414;
                     hNew = calculateHValue(i + 1, j - 1, dest);
