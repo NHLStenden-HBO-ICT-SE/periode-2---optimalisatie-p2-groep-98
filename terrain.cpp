@@ -229,7 +229,7 @@ namespace Tmpl8
     // A Function to find the shortest path between
     // a given source cell to a destination cell according
     // to A* Search Algorithm
-    void aStarSearch(Tank src, vec2 dest)
+    void Terrain::aStarSearch(Tank src, vec2 dest)
     {
         // If the source is out of range
         if (isValid(src.get_position().x, src.get_position().y) == false) {

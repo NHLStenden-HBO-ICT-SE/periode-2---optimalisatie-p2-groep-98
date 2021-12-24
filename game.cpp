@@ -3,7 +3,7 @@
 #include <iostream>
 #include <stack>
 #include <stdlib.h>
-#include "terrain.cpp"
+#include "terrain.h"
 
 constexpr auto num_tanks_blue = 2048;
 constexpr auto num_tanks_red = 2048;
@@ -266,9 +266,7 @@ void Game::update(float deltaTime)
                 t.set_route(background_terrain.get_route(t, t.target));
                 });
             */
-
-
-            aStarSearch(t, t.target);
+            Terrain::aStarSearch(t, t.target);
             //t.set_route(background_terrain.get_route(t, t.target));
         }
     }
