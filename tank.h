@@ -10,12 +10,14 @@ enum allignments
     RED
 };
 
-class Tank
+class Tank : public Collidable
 {
   public:
     Tank(float pos_x, float pos_y, allignments allignment, Sprite* tank_sprite, Sprite* smoke_sprite, float tar_x, float tar_y, float collision_radius, int health, float max_speed);
     Tank();
     ~Tank();
+
+    
 
     int getProperty(std::string name);
 
@@ -24,6 +26,15 @@ class Tank
     vec2 get_position() const { return position; };
     float get_collision_radius() const { return collision_radius; };
     bool rocket_reloaded() const { return reloaded; };
+
+    
+    vec2& getCurrentPosition() {
+        return position;
+    };
+    float getColRadius() {
+        return collision_radius;
+    }
+
 
     void set_route(const std::vector<vec2>& route);
     void reload_rocket();

@@ -82,7 +82,7 @@ using namespace std;
 using namespace Tmpl8;
 
 #include "thread_pool.h"
-
+#include "collidable.h"
 #include "tank.h"
 #include "terrain.h"
 #include "rocket.h"

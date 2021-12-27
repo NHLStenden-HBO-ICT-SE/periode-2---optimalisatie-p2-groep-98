@@ -3,7 +3,7 @@
 namespace Tmpl8
 {
 
-class Rocket
+class Rocket : public Collidable
 {
   public:
     Rocket(vec2 position, vec2 direction, float collision_radius, allignments allignment, Sprite* rocket_sprite);
@@ -13,6 +13,13 @@ class Rocket
     void draw(Surface* screen);
 
     bool intersects(vec2 position_other, float radius_other) const;
+
+    vec2& getCurrentPosition() {
+        return position;
+    };
+    float getColRadius() {
+        return collision_radius;
+    }
 
     vec2 position;
     vec2 speed;

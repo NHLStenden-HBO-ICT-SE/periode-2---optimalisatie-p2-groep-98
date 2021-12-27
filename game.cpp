@@ -286,7 +286,10 @@ void Game::update(float deltaTime)
 
         tree->addObject(t);
     }
-    vector<vector<Tank*>> collist = tree->getCollisionReadyNodes();
+    for (Rocket& r : rockets) {
+        tree->addObject(r);
+    }
+    vector<vector<Collidable*>> collist = tree->getCollisionReadyNodes();
     auto t_start = std::chrono::high_resolution_clock::now();
 
 
@@ -294,25 +297,56 @@ void Game::update(float deltaTime)
 
 
 
-
+    std::mutex mutex;
 
     vector<future<void>> threads;
     for (size_t i = 0; i < collist.size(); i++)
     {
         threads.push_back(pool->enqueue([&, i]() {
-            vector<Tank*> col = collist.at(i);
-            for (Tank* t1 : col) {
-                for (Tank* t2 : col) {
+            vector<Collidable*> col = collist.at(i);
+            for (Collidable* t1 : col) {
+                for (Collidable* t2 : col) {
                     if (t1 == t2) continue;
-                    vec2 dir = t1->get_position() - t2->get_position();
+                    vec2 dir = t1->getCurrentPosition() - t2->getCurrentPosition();
                     float dir_squared_len = dir.sqr_length();
-                    float col_squared_len = (t1->get_collision_radius() + t2->get_collision_radius());
+                    float col_squared_len = (t1->getColRadius() + t2->getColRadius());
                     col_squared_len *= col_squared_len ;
 
                     if (dir_squared_len < col_squared_len)
                     {
-                        t1->push(dir.normalized(), 1.f);
-                        collisions++;
+                        
+                        if (t1->collider_type == Collider::TANK && t2->collider_type == Collider::TANK) {
+                            Tank* tank = dynamic_cast<Tank*>(t1);
+                            mutex.lock();
+
+                            tank->push(dir.normalized(), 1.f);
+                            mutex.unlock();
+
+                            collisions++;
+                        }
+                        if (t1->collider_type == Collider::ROCKET && t2->collider_type == Collider::TANK) {
+                            Rocket* rocket = dynamic_cast<Rocket*>(t1);
+                            Tank* tank = dynamic_cast<Tank*>(t2);
+
+                            if (tank->active && (tank->allignment != rocket->allignment) && rocket->intersects(tank->position, tank->collision_radius))
+                            {
+                                Explosion e = Explosion(&explosion, tank->position);
+                                mutex.lock();
+
+                                explosions.push_back(e);
+                                if (tank->hit(rocket_hit_value))
+                                {
+                                    smokes.push_back(Smoke(smoke, tank->position - vec2(7, 24)));
+                                }
+                                mutex.unlock();
+
+
+                                rocket->active = false;
+
+                                
+                            }
+
+                        }
 
                         // cout << t1->x << " : " << t1->y << " Collides with " << t2->x << " : " << t2->y << endl;;
 
@@ -327,31 +361,7 @@ void Game::update(float deltaTime)
     //Check tank collision and nudge tanks away from each other    //Optimize, create a list with active tanks instead of checking in the tanks list
 
 
-    //for (Tank& tank : tanks)
-    //{
-    //    if (tank.active)
-    //    {
-    //        //use the active tank list
-    //        //What about a grid system where the  other_tank 's are only the tanks in the same grid block.
-    //        //Name of the algorithm: The separate axis theorem
-    //        for (Tank& other_tank : tanks)
-    //        {
-    //            if (&tank == &other_tank || !other_tank.active) continue;
-
-    //            vec2 dir = tank.get_position() - other_tank.get_position();
-    //            float dir_squared_len = dir.sqr_length();
-
-    //            float col_squared_len = (tank.get_collision_radius() + other_tank.get_collision_radius());
-    //            col_squared_len *= col_squared_len;
-
-    //            if (dir_squared_len < col_squared_len)
-    //            {
-    //                tank.push(dir.normalized(), 1.f);
-    //            }
-    //        }
-    //    }
-    //}
-
+  
 
     vector<vec2> points;
 
@@ -408,21 +418,10 @@ void Game::update(float deltaTime)
         rocket.tick();
 
         //Check if rocket collides with enemy tank, spawn explosion, and if tank is destroyed spawn a smoke plume
-        for (Tank& tank : tanks)
+        /*for (Tank& tank : tanks)
         {
-            if (tank.active && (tank.allignment != rocket.allignment) && rocket.intersects(tank.position, tank.collision_radius))
-            {
-                explosions.push_back(Explosion(&explosion, tank.position));
-
-                if (tank.hit(rocket_hit_value))
-                {
-                    smokes.push_back(Smoke(smoke, tank.position - vec2(7, 24)));
-                }
-
-                rocket.active = false;
-                break;
-            }
-        }
+            
+        }*/
     }
 
     //Disable rockets if they collide with the "forcefield"
@@ -609,7 +608,7 @@ void Game::draw()
         toSort.push_back(t);
     }
 
-    mergeSort(toSort, 0, NUM_TANKS - 1, "health");
+    //mergeSort(toSort, 0, NUM_TANKS - 1, "health");
     //toSort.erase(std::remove_if(toSort.begin(), toSort.end(), [](Tank* tank) { return !tank->active; }), toSort.end());
 
     std::vector<Tank> sorted_tanks_blue;

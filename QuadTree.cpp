@@ -34,26 +34,26 @@ void QuadTree::pushAllNodesTo(vector<QuadTree*>& result)
 
 }
 
-std::vector<std::vector<Tank*>> QuadTree::getCollisionReadyNodes() {
+std::vector<std::vector<Collidable*>> QuadTree::getCollisionReadyNodes() {
 
 	//Getting all the lowest nodes from the tree
 	vector<QuadTree*> results;
 	this->pushAllNodesTo(results);
 
 
-	std::vector<std::vector<Tank*>> collision_ready_vector;
+	std::vector<std::vector<Collidable*>> collision_ready_vector;
 
 	//Adding all objects from the parents
 	for (QuadTree* node : results) {
-		vector<Tank*> tanks;
+		vector<Collidable*> Collidables;
 		QuadTree* usenode = node;
-		tanks.insert(tanks.end(), node->objects.begin(), node->objects.end());
+		Collidables.insert(Collidables.end(), node->objects.begin(), node->objects.end());
 		while (usenode->has_parent) {
-			tanks.insert(tanks.end(), usenode->parent->objects.begin(), usenode->parent->objects.end());
+			Collidables.insert(Collidables.end(), usenode->parent->objects.begin(), usenode->parent->objects.end());
 			usenode = usenode->parent;
 		}
 
-		collision_ready_vector.push_back(tanks);
+		collision_ready_vector.push_back(Collidables);
 	}
 	return collision_ready_vector;
 }
@@ -99,34 +99,34 @@ void QuadTree::split() {
 
 
 
-bool QuadTree::doesFit(Tank& t) {
+bool QuadTree::doesFit(Collidable& t) {
 	int endx = start_x + width;
 	int endy = start_y + height;
 	float MIN_DISTANCE = 1.5;
-	float px = t.get_position().x;
-	float py = t.get_position().y;
+	float px = t.getCurrentPosition().x;
+	float py = t.getCurrentPosition().y;
 
 	return endx - px >= MIN_DISTANCE && endy - py >= MIN_DISTANCE && px - start_x >= MIN_DISTANCE && py - start_y >= MIN_DISTANCE;
 
 }
 
 
-QuadTree& QuadTree::addObject(Tank &t)
+QuadTree& QuadTree::addObject(Collidable &t)
 {
 	if (!this->has_child_nodes && this->objects.size() > MAX_OBJECTS && level < MAX_LEVELS) {
 		//If the list is to crowded, split the current node into 4 new ones and replace every object from the current list
 			//Create the 4 sub squares
 		this->split();
 		
-		//Copy the tanks in current node to a temp list
-		vector<Tank*> templist = this->objects;
+		//Copy the Collidables in current node to a temp list
+		vector<Collidable*> templist = this->objects;
 		//Clear the current node objects since everything will be moved into sub nodes
 		this->objects.clear();
 
 
 		//cout << "TESTING ONE " << this->child_nodes.at(0)->level << endl;
 
-		for (Tank* tt : templist) {
+		for (Collidable* tt : templist) {
 			this->addObject(*tt);
 		}
 		return this->addObject(t);

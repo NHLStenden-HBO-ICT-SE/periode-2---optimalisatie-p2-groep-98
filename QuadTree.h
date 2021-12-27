@@ -9,7 +9,7 @@
 class QuadTree
 {
 public:
-	int MAX_OBJECTS = 10;
+	int MAX_OBJECTS = 20;
 	int MAX_LEVELS = 5;
 	int level = 0;
 	int start_x;
@@ -19,17 +19,17 @@ public:
 	bool has_child_nodes = false;
 	bool has_parent = false;
 	std::string formatname;
-	std::vector<Tank*> objects;
+	std::vector<Collidable*> objects;
 	std::vector<QuadTree*> child_nodes;
 
 	QuadTree* parent;
 
 	QuadTree(int level, int startx, int starty, int width, int height, std::string name, QuadTree* parent);
 	void pushAllNodesTo(std::vector<QuadTree*>& result);
-	std::vector<std::vector<Tank*>> getCollisionReadyNodes();
+	std::vector<std::vector<Collidable*>> getCollisionReadyNodes();
 	void clear();
 	void split();
-	QuadTree& addObject(Tank& t);
-	bool doesFit(Tank& t);
+	QuadTree& addObject(Collidable& t);
+	bool doesFit(Collidable& t);
 };
 
