@@ -7,6 +7,7 @@ namespace Tmpl8
 Rocket::Rocket(vec2 position, vec2 direction, float collision_radius, allignments allignment, Sprite* rocket_sprite)
     : position(position), speed(direction), collision_radius(collision_radius), allignment(allignment), current_frame(0), rocket_sprite(rocket_sprite), active(true)
 {
+    this->collider_type = Collider::ROCKET;
 }
 
 Rocket::~Rocket()
@@ -26,6 +27,13 @@ void Rocket::draw(Surface* screen)
     rocket_sprite->draw(screen, (int)position.x - 12 + HEALTHBAR_OFFSET, (int)position.y - 12);
 }
 
+
+vec2 Rocket::getCurrentPosition()
+{
+    return this->position;
+
+}
+
 //Does the given circle collide with this rockets collision circle?
 bool Rocket::intersects(vec2 position_other, float radius_other) const
 {
@@ -41,5 +49,7 @@ bool Rocket::intersects(vec2 position_other, float radius_other) const
         return false;
     }
 }
+
+
 
 } // namespace Tmpl8

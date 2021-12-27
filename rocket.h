@@ -3,7 +3,7 @@
 namespace Tmpl8
 {
 
-class Rocket
+class Rocket : public Collidable
 {
   public:
     Rocket(vec2 position, vec2 direction, float collision_radius, allignments allignment, Sprite* rocket_sprite);
@@ -14,6 +14,9 @@ class Rocket
 
     bool intersects(vec2 position_other, float radius_other) const;
 
+    float getCollisionRadius() { return this->collision_radius; };
+
+    vec2 getCurrentPosition();
     vec2 position;
     vec2 speed;
 

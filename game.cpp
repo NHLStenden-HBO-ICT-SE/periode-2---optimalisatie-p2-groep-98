@@ -283,8 +283,11 @@ void Game::update(float deltaTime)
     for (Tank& t : tanks) {
         background_terrain.updateTile(&t, t.getCurrentPosition());
         
-
     }
+    for (Rocket& r : rockets) {
+        background_terrain.updateTile(&r, r.getCurrentPosition());
+    }
+
     
     int collisions = 0;
     for (Tank& tank : tanks) {
@@ -300,11 +303,38 @@ void Game::update(float deltaTime)
             float col_squared_len = (tank.get_collision_radius() + t2->getCollisionRadius());
             col_squared_len *= col_squared_len;
 
-            if (dir_squared_len < col_squared_len)
+            //No collision > continue in for loop
+            if (dir_squared_len > col_squared_len)
             {
+                continue;
+                
+            }
+
+            //Tank collision
+            if (t2->collider_type == Collider::TANK) {
                 collisions++;
                 tank.push(dir.normalized(), 1.f);
             }
+
+
+            //Rocket collision
+            if (t2->collider_type == Collider::ROCKET) {
+                Rocket* rocket = dynamic_cast<Rocket*>(t2);
+                if (tank.active && (tank.allignment != rocket->allignment) && rocket->intersects(tank.position, tank.collision_radius))
+                {
+                    explosions.push_back(Explosion(&explosion, tank.position));
+
+                    if (tank.hit(rocket_hit_value))
+                    {
+                        smokes.push_back(Smoke(smoke, tank.position - vec2(7, 24)));
+                    }
+
+                    rocket->active = false;
+                    break;
+                }
+            }
+
+
         }
 
 
@@ -395,7 +425,7 @@ void Game::update(float deltaTime)
         rocket.tick();
 
         //Check if rocket collides with enemy tank, spawn explosion, and if tank is destroyed spawn a smoke plume
-        for (Tank& tank : tanks)
+       /* for (Tank& tank : tanks)
         {
             if (tank.active && (tank.allignment != rocket.allignment) && rocket.intersects(tank.position, tank.collision_radius))
             {
@@ -409,7 +439,7 @@ void Game::update(float deltaTime)
                 rocket.active = false;
                 break;
             }
-        }
+        }*/
     }
 
     //Disable rockets if they collide with the "forcefield"

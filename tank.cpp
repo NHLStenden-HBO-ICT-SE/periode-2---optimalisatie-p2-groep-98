@@ -35,6 +35,7 @@ Tank::Tank(
       tank_sprite(tank_sprite),
       smoke_sprite(smoke_sprite)
 {
+    this->collider_type = Collider::TANK;
 }
 
 Tank::~Tank()
