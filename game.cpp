@@ -339,36 +339,7 @@ void Game::update(float deltaTime)
 
 
     }
-    //cout << "COL COUNT : " << collisions << endl;
-
-
-
-
-    //for (Tank& tank : tanks)
-    //{
-    //    if (tank.active)
-    //    {
-    //        //use the active tank list
-    //        //What about a grid system where the  other_tank 's are only the tanks in the same grid block.
-    //        //Name of the algorithm: The separate axis theorem
-    //        for (Tank& other_tank : tanks)
-    //        {
-    //            if (&tank == &other_tank || !other_tank.active) continue;
-
-    //            vec2 dir = tank.get_position() - other_tank.get_position();
-    //            float dir_squared_len = dir.sqr_length();
-
-    //            float col_squared_len = (tank.get_collision_radius() + other_tank.get_collision_radius());
-    //            col_squared_len *= col_squared_len;
-
-    //            if (dir_squared_len < col_squared_len)
-    //            {
-    //                tank.push(dir.normalized(), 1.f);
-    //            }
-    //        }
-    //    }
-    //}
-
+    
 
     vector<vec2> points;
 
@@ -423,29 +394,11 @@ void Game::update(float deltaTime)
     for (Rocket& rocket : rockets)
     {
         rocket.tick();
-
-        //Check if rocket collides with enemy tank, spawn explosion, and if tank is destroyed spawn a smoke plume
-       /* for (Tank& tank : tanks)
-        {
-            if (tank.active && (tank.allignment != rocket.allignment) && rocket.intersects(tank.position, tank.collision_radius))
-            {
-                explosions.push_back(Explosion(&explosion, tank.position));
-
-                if (tank.hit(rocket_hit_value))
-                {
-                    smokes.push_back(Smoke(smoke, tank.position - vec2(7, 24)));
-                }
-
-                rocket.active = false;
-                break;
-            }
-        }*/
     }
 
     //Disable rockets if they collide with the "forcefield"
     //Hint: A point to convex hull intersection test might be better here? :) (Disable if outside)
 
-    //Optimize: active_rocket list 
 
     for (Rocket& rocket : rockets)
     {
