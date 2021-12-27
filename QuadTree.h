@@ -9,8 +9,8 @@
 class QuadTree
 {
 public:
-	int MAX_OBJECTS = 20;
-	int MAX_LEVELS = 5;
+	int MAX_OBJECTS = 5;
+	int MAX_LEVELS = 4;
 	int level = 0;
 	int start_x;
 	int start_y;
