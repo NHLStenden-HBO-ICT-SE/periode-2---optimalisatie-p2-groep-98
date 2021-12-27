@@ -292,6 +292,10 @@ void Game::update(float deltaTime)
 
     int collisions = 0;
 
+
+
+
+
     vector<future<void>> threads;
     for (size_t i = 0; i < collist.size(); i++)
     {
@@ -317,33 +321,36 @@ void Game::update(float deltaTime)
             }
             }));
     }
+    for (future<void> &thread : threads) {
+        thread.wait();
+    }
     //Check tank collision and nudge tanks away from each other    //Optimize, create a list with active tanks instead of checking in the tanks list
 
 
-    for (Tank& tank : tanks)
-    {
-        if (tank.active)
-        {
-            //use the active tank list
-            //What about a grid system where the  other_tank 's are only the tanks in the same grid block.
-            //Name of the algorithm: The separate axis theorem
-            for (Tank& other_tank : tanks)
-            {
-                if (&tank == &other_tank || !other_tank.active) continue;
+    //for (Tank& tank : tanks)
+    //{
+    //    if (tank.active)
+    //    {
+    //        //use the active tank list
+    //        //What about a grid system where the  other_tank 's are only the tanks in the same grid block.
+    //        //Name of the algorithm: The separate axis theorem
+    //        for (Tank& other_tank : tanks)
+    //        {
+    //            if (&tank == &other_tank || !other_tank.active) continue;
 
-                vec2 dir = tank.get_position() - other_tank.get_position();
-                float dir_squared_len = dir.sqr_length();
+    //            vec2 dir = tank.get_position() - other_tank.get_position();
+    //            float dir_squared_len = dir.sqr_length();
 
-                float col_squared_len = (tank.get_collision_radius() + other_tank.get_collision_radius());
-                col_squared_len *= col_squared_len;
+    //            float col_squared_len = (tank.get_collision_radius() + other_tank.get_collision_radius());
+    //            col_squared_len *= col_squared_len;
 
-                if (dir_squared_len < col_squared_len)
-                {
-                    tank.push(dir.normalized(), 1.f);
-                }
-            }
-        }
-    }
+    //            if (dir_squared_len < col_squared_len)
+    //            {
+    //                tank.push(dir.normalized(), 1.f);
+    //            }
+    //        }
+    //    }
+    //}
 
 
     vector<vec2> points;
