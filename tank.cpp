@@ -88,6 +88,12 @@ void Tank::tick(Terrain& terrain)
     }
 }
 
+vec2 Tank::getCurrentPosition()
+{
+    //cout << "Position " << get_position().x << " : " << get_position().y << endl;
+    return get_position();
+}
+
 void Tank::set_route(const std::vector<vec2>& route)
 {
     if (route.size() > 0)

@@ -87,8 +87,7 @@ void Game::init()
     particle_beams.push_back(Particle_beam(vec2(590, 327), vec2(100, 50), &particle_beam_sprite, particle_beam_hit_value));
     particle_beams.push_back(Particle_beam(vec2(64, 64), vec2(100, 50), &particle_beam_sprite, particle_beam_hit_value));
     particle_beams.push_back(Particle_beam(vec2(1200, 600), vec2(100, 50), &particle_beam_sprite, particle_beam_hit_value));
-    //Quad tree for collisions
-    tree = new QuadTree(0, 0, 0, 125, 125, "root", nullptr);
+    
 }
 
 // -----------------------------------------------------------
@@ -266,12 +265,8 @@ void Game::update(float deltaTime)
     //Initializing routes here so it gets counted for performance..
     if (frame_count == 0)
     {
+        background_terrain.initializeTilesNeighbours();
         for (Tank& t : tanks) {
-
-            /*pool->enqueue([&]() {
-                t.set_route(background_terrain.get_route(t, t.target));
-                });
-            */
             t.set_route(background_terrain.get_route(t, t.target));
         }
     }
@@ -280,51 +275,43 @@ void Game::update(float deltaTime)
 
 
 
-    tree = new QuadTree(0, 0, 0, 1500, 1500, "root", nullptr);
-    for (Tank& t : tanks) {
-        //cout << t.position.x << ": " << t.position.y << endl;
-
-        tree->addObject(t);
-    }
-    vector<vector<Tank*>> collist = tree->getCollisionReadyNodes();
-    auto t_start = std::chrono::high_resolution_clock::now();
-
-
-    int collisions = 0;
-
-
-
-
-
-    vector<future<void>> threads;
-    for (size_t i = 0; i < collist.size(); i++)
-    {
-        threads.push_back(pool->enqueue([&, i]() {
-            vector<Tank*> col = collist.at(i);
-            for (Tank* t1 : col) {
-                for (Tank* t2 : col) {
-                    if (t1 == t2) continue;
-                    vec2 dir = t1->get_position() - t2->get_position();
-                    float dir_squared_len = dir.sqr_length();
-                    float col_squared_len = (t1->get_collision_radius() + t2->get_collision_radius());
-                    col_squared_len *= col_squared_len ;
-
-                    if (dir_squared_len < col_squared_len)
-                    {
-                        t1->push(dir.normalized(), 1.f);
-                        collisions++;
-
-                        // cout << t1->x << " : " << t1->y << " Collides with " << t2->x << " : " << t2->y << endl;;
-
-                    }
-                }
-            }
-            }));
-    }
-    for (future<void> &thread : threads) {
-        thread.wait();
-    }
+   
     //Check tank collision and nudge tanks away from each other    //Optimize, create a list with active tanks instead of checking in the tanks list
+    
+
+    background_terrain.clearGrid();
+    for (Tank& t : tanks) {
+        background_terrain.updateTile(&t, t.getCurrentPosition());
+        
+
+    }
+    
+    int collisions = 0;
+    for (Tank& tank : tanks) {
+        //cout << "POS " << tank.get_position().x << endl;
+        TerrainTile* til = background_terrain.getTileFor(&tank, tank.get_position());
+        vector<Collidable*> possible_collisions = til->getPossibleCollidables();
+        for (Collidable* t2 : possible_collisions) {
+            if (&tank == t2) continue;
+
+            vec2 dir = tank.get_position() - t2->getCurrentPosition();
+            float dir_squared_len = dir.sqr_length();
+
+            float col_squared_len = (tank.get_collision_radius() + t2->getCollisionRadius());
+            col_squared_len *= col_squared_len;
+
+            if (dir_squared_len < col_squared_len)
+            {
+                collisions++;
+                tank.push(dir.normalized(), 1.f);
+            }
+        }
+
+
+    }
+    //cout << "COL COUNT : " << collisions << endl;
+
+
 
 
     //for (Tank& tank : tanks)
@@ -608,8 +595,8 @@ void Game::draw()
     for (Tank t : tanks) {
         toSort.push_back(t);
     }
-
-    mergeSort(toSort, 0, NUM_TANKS - 1, "health");
+    
+    //mergeSort(toSort, 0, NUM_TANKS - 1, "health");
     //toSort.erase(std::remove_if(toSort.begin(), toSort.end(), [](Tank* tank) { return !tank->active; }), toSort.end());
 
     std::vector<Tank> sorted_tanks_blue;

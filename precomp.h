@@ -80,11 +80,13 @@ using namespace std;
 #include "surface.h"
 
 using namespace Tmpl8;
+#include "collidable.h"
 
 #include "thread_pool.h"
-
 #include "tank.h"
+
 #include "terrain.h"
+
 #include "rocket.h"
 #include "smoke.h"
 #include "explosion.h"
