@@ -95,7 +95,7 @@ void Game::init()
     particle_beams.push_back(Particle_beam(vec2(590, 327), vec2(100, 50), &particle_beam_sprite, particle_beam_hit_value));
     particle_beams.push_back(Particle_beam(vec2(64, 64), vec2(100, 50), &particle_beam_sprite, particle_beam_hit_value));
     particle_beams.push_back(Particle_beam(vec2(1200, 600), vec2(100, 50), &particle_beam_sprite, particle_beam_hit_value));
-    
+
 }
 
 // -----------------------------------------------------------
@@ -129,15 +129,118 @@ Tank& Game::find_closest_enemy(Tank& current_tank)
     return tanks.at(closest_index);
 }
 
+vec2 p0;
+vector<vec2> points_on_hull;
+
 //Checks if a point lies on the left of an arbitrary angled line
 bool Tmpl8::Game::left_of_line(vec2 line_start, vec2 line_end, vec2 point)
 {
     return ((line_end.x - line_start.x) * (point.y - line_start.y) - (line_end.y - line_start.y) * (point.x - line_start.x)) < 0;
 }
 
+// Square of distance between p1 and p2
+float distance_square(vec2 p1, vec2 p2)
+{
+    return (p1.x - p2.x) * (p1.x - p2.x) +
+        (p1.y - p2.y) * (p1.y - p2.y);
+}
 
-vec2 p0;
-vector<vec2> points_on_hull;
+// To find orientation of ordered triplet (p, q, r).
+// The function returns following values
+// 0 --> p, q and r are collinear
+// 1 --> Clockwise
+// 2 --> Counterclockwise
+int orientation(vec2 p, vec2 q, vec2 r)
+{
+    float val = (q.y - p.y) * (r.x - q.x) -
+        (q.x - p.x) * (r.y - q.y);
+
+    if (val == 0)
+        return 0;  // collinear
+    return (val > 0)
+        ? 1
+        : 2; // clock or counterclock wise
+}
+
+// A function used by library function qsort() to sort an array of points with respect to the first point
+int compare(vec2 point1, vec2 point2)
+{
+    vec2 p1 = point1;
+    vec2 p2 = point2;
+    int dir = orientation(p0, p1, p2);
+
+    if (dir == 0)
+        return (distance_square(p0, p2) >= distance_square(p0, p1)) ? -1 : 1;
+    return (dir == 2) ? -1 : 1;
+}
+
+void convex_merge(vector<vec2>& list, int const left, int const mid, int const right)
+{
+    const int subList1 = mid - left + 1;
+    const int subList2 = right - mid;
+
+
+    //list.begin() + left, list.begin() + left + subArrayOne
+    //list.begin() + mid, list.begin() + mid + subArrayTwo
+    vector<vec2> leftArray = {  };
+    vector<vec2> rightArray = {  };
+
+
+
+    //De list splitten in de 2 sublijsten
+    for (int i = 0; i < subList1; i++) {
+        leftArray.push_back(list.at(left + i));
+
+    }
+    for (int j = 0; j < subList2; j++) {
+        rightArray.push_back(list.at(mid + 1 + j));
+
+    }
+
+
+    int indexList1 = 0;
+    int indexList2 = 0;
+    int indexMerged = left;
+
+
+    while (indexList1 < subList1 && indexList2 < subList2) {
+        if (compare(leftArray[indexList1], rightArray[indexList2]) == -1) {
+            list[indexMerged] = leftArray[indexList1];
+            indexList1++;
+        }
+        else {
+            list[indexMerged] = rightArray[indexList2];
+            indexList2++;
+        }
+        indexMerged++;
+    }
+
+    while (indexList1 < subList1) {
+        list[indexMerged] = leftArray[indexList1];
+        indexList1++;
+        indexMerged++;
+    }
+
+    while (indexList2 < subList2) {
+        list[indexMerged] = rightArray[indexList2];
+        indexList2++;
+        indexMerged++;
+    }
+
+}
+
+
+void convex_merge_sort(vector<vec2>& list, int const begin, int const end)
+{
+    if (begin >= end) {
+        return;
+    }
+    int mid = begin + (end - begin) / 2;
+    convex_merge_sort(list, begin, mid);
+    convex_merge_sort(list, mid + 1, end);
+    convex_merge(list, begin, mid, end);
+
+}
 
 // Find next to top in a stack
 vec2 next_to_top(stack<vec2>& S)
@@ -157,54 +260,18 @@ void swap(vec2& p1, vec2& p2)
     p2 = temp;
 }
 
-// Square of distance between p1 and p2
-int distance_square(vec2 p1, vec2 p2)
-{
-    return (p1.x - p2.x) * (p1.x - p2.x) +
-        (p1.y - p2.y) * (p1.y - p2.y);
-}
-
-// To find orientation of ordered triplet (p, q, r).
-// The function returns following values
-// 0 --> p, q and r are collinear
-// 1 --> Clockwise
-// 2 --> Counterclockwise
-int orientation(vec2 p, vec2 q, vec2 r)
-{
-    int val = (q.y - p.y) * (r.x - q.x) -
-        (q.x - p.x) * (r.y - q.y);
-
-    if (val == 0) return 0;  // collinear
-    return (val > 0) ? 1 : 2; // clock or counterclock wise
-}
-
-// A function used by library function qsort() to sort an array of points with respect to the first point
-int compare(const void* vp1, const void* vp2)
-{
-    vec2* p1 = (vec2*)vp1;
-    vec2* p2 = (vec2*)vp2;
-
-    // Find orientation
-    int o = orientation(p0, *p1, *p2);
-    if (o == 0)
-        return (distance_square(p0, *p2) >= distance_square(p0, *p1)) ? -1 : 1;
-
-    return (o == 2) ? -1 : 1;
-}
-
 // Prints convex hull of a set of n points.
 void convexHull(vector<vec2> points)
 {
     int i = 0;
     // Find the bottommost point
-    int ymin = points.at(0).y, min = 0;
+    float ymin = points.at(0).y, min = 0;
     for (int i = 1; i < points.size(); i++)
     {
-        int y = points.at(i).y;
+        float y = points.at(i).y;
 
         // Pick the bottom-most or chose the left most point in case of tie
-        if ((y < ymin) || (ymin == y &&
-            points.at(i).x < points.at(min).x))
+        if ((y < ymin) || (ymin == y && points.at(i).x < points.at(min).x))
             ymin = points.at(i).y, min = i;
     }
 
@@ -214,7 +281,7 @@ void convexHull(vector<vec2> points)
     // Sort n-1 points with respect to the first point.
     // A point p1 comes before p2 in sorted output if p2 has larger polar angle (in counterclockwise direction) than p1
     p0 = points.at(0);
-    qsort(&points.at(1), points.size() - 1, sizeof(vec2), compare);
+    convex_merge_sort(points, 0, points.size() - 1);
 
     // If two or more points make same angle with p0,
     // Remove all but the one that is farthest from p0
@@ -232,7 +299,8 @@ void convexHull(vector<vec2> points)
     }
 
     // If modified array of points has less than 3 points, convex hull is not possible
-    if (m < 3) return;
+    if (m < 3)
+        return;
 
     stack<vec2> S;
     S.push(points.at(0));
@@ -288,7 +356,7 @@ void Game::update(float deltaTime)
 
    
     //Check tank collision and nudge tanks away from each other    //Optimize, create a list with active tanks instead of checking in the tanks list
-    
+
 
 
     grid->clearGrid();
@@ -302,7 +370,7 @@ void Game::update(float deltaTime)
         grid->updateTile(&r, r.getCurrentPosition());
     }
 
-    
+
     int collisions = 0;
 
     int TANK_COUNT = tanks.size();
@@ -547,14 +615,14 @@ void merge(vector<Tank>& list, int const left, int const mid, int const right, s
 
 }
 
-void mergeSort(vector<Tank>& list, int const begin, int const end, string sortOn)
+void merge_sort(vector<Tank>& list, int const begin, int const end, string sortOn)
 {
     if (begin >= end) {
         return;
     }
     int mid = begin + (end - begin) / 2;
-    mergeSort(list, begin, mid, sortOn);
-    mergeSort(list, mid + 1, end, sortOn);
+    merge_sort(list, begin, mid, sortOn);
+    merge_sort(list, mid + 1, end, sortOn);
     merge(list, begin, mid, end, sortOn);
 
 }
@@ -624,8 +692,8 @@ void Game::draw()
     for (Tank t : tanks) {
         toSort.push_back(t);
     }
-    
-    //mergeSort(toSort, 0, NUM_TANKS - 1, "health");
+
+    //merge_sort(toSort, 0, NUM_TANKS - 1, "health");
     //toSort.erase(std::remove_if(toSort.begin(), toSort.end(), [](Tank* tank) { return !tank->active; }), toSort.end());
 
     std::vector<Tank> sorted_tanks_blue;
