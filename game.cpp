@@ -4,7 +4,9 @@
 #include <stack>
 #include <stdlib.h>
 #include <map>
-
+#include <algorithm>
+#include <iterator>
+#include <vector>
 constexpr auto num_tanks_blue = 2048;
 constexpr auto num_tanks_red = 2048;
 
@@ -19,7 +21,7 @@ constexpr auto health_bar_width = 70;
 constexpr auto max_frames = 2000;
 
 //Global performance timer
-constexpr auto REF_PERFORMANCE = 99619; //UPDATE THIS WITH YOUR REFERENCE PERFORMANCE (see console after 2k frames)
+constexpr auto REF_PERFORMANCE = 29696.7; //UPDATE THIS WITH YOUR REFERENCE PERFORMANCE (see console after 2k frames)
 static timer perf_timer;
 static float duration;
 
@@ -46,8 +48,9 @@ const static vec2 rocket_size(6, 6);
 const static float tank_radius = 3.f;
 const static float rocket_radius = 5.f;
 
-const int num_of_threads = std::thread::hardware_concurrency() * 2;
-ThreadPool* pool = new ThreadPool(num_of_threads);
+const int NUM_OF_THREADS = std::thread::hardware_concurrency() * 2;
+ThreadPool* pool = new ThreadPool(NUM_OF_THREADS);
+std::mutex mlock;
 
 
 
@@ -257,6 +260,12 @@ void convexHull(vector<vec2> points)
         i++;
     }
 }
+
+
+
+
+
+
 // -----------------------------------------------------------
 // Update the game state:
 // Move all objects
@@ -277,15 +286,9 @@ void Game::update(float deltaTime)
         }
     }
 
-
-
-
-
    
     //Check tank collision and nudge tanks away from each other    //Optimize, create a list with active tanks instead of checking in the tanks list
     
-
-
 
 
     grid->clearGrid();
@@ -301,55 +304,87 @@ void Game::update(float deltaTime)
 
     
     int collisions = 0;
-    for (Tank& tank : tanks) {
-        //cout << "POS " << tank.get_position().x << endl;
-        CollisionTile* til = grid->getTileFor(&tank, tank.get_position());
-        vector<Collidable*> possible_collisions = til->getPossibleCollidables();
-        for (Collidable* t2 : possible_collisions) {
-            if (&tank == t2) continue;
 
-            vec2 dir = tank.get_position() - t2->getCurrentPosition();
-            float dir_squared_len = dir.sqr_length();
+    int TANK_COUNT = tanks.size();
+    int SPLIT_COUNT = 10;
+    int LIST_SIZE = TANK_COUNT / SPLIT_COUNT;
+    
+    int spliter = NUM_OF_THREADS;
 
-            float col_squared_len = (tank.get_collision_radius() + t2->getCollisionRadius());
-            col_squared_len *= col_squared_len;
+    
+    
+    vector<future<void>> threads;
 
-            //No collision > continue in for loop
-            if (dir_squared_len > col_squared_len)
+    for (size_t x = 0; x < spliter; x++)
+    {
+        int startAt = 0;
+        startAt = x * tanks.size() / spliter;
+        threads.push_back(pool->enqueue([&, startAt]() {
+            for (size_t i = 0; i < tanks.size() / spliter; i++)
             {
-                continue;
-                
-            }
+                //for (Tank& tank : tanks) {
 
-            //Tank collision
-            if (t2->collider_type == Collider::TANK) {
-                collisions++;
-                tank.push(dir.normalized(), 1.f);
-            }
+                Tank& tank = tanks.at(i + startAt);
+                CollisionTile* til = grid->getTileFor(&tank, tank.get_position());
+                vector<Collidable*> possible_collisions = til->getPossibleCollidables();
+                for (Collidable* t2 : possible_collisions) {
+                    if (&tank == t2) continue;
 
+                    vec2 dir = tank.get_position() - t2->getCurrentPosition();
+                    float dir_squared_len = dir.sqr_length();
 
-            //Rocket collision
-            if (t2->collider_type == Collider::ROCKET) {
-                Rocket* rocket = dynamic_cast<Rocket*>(t2);
-                if (tank.active && (tank.allignment != rocket->allignment) && rocket->intersects(tank.position, tank.collision_radius))
-                {
-                    explosions.push_back(Explosion(&explosion, tank.position));
+                    float col_squared_len = (tank.get_collision_radius() + t2->getCollisionRadius());
+                    col_squared_len *= col_squared_len;
 
-                    if (tank.hit(rocket_hit_value))
+                    //No collision > continue in for loop
+                    if (dir_squared_len > col_squared_len)
                     {
-                        smokes.push_back(Smoke(smoke, tank.position - vec2(7, 24)));
+                        continue;
+
                     }
 
-                    rocket->active = false;
-                    break;
+                    //Tank collision
+                    if (t2->collider_type == Collider::TANK) {
+                        tank.push(dir.normalized(), 1.f);
+                    }
+
+
+                    //Rocket collision
+                    if (t2->collider_type == Collider::ROCKET) {
+                        Rocket* rocket = dynamic_cast<Rocket*>(t2);
+                        if (tank.active && (tank.allignment != rocket->allignment) && rocket->intersects(tank.position, tank.collision_radius))
+                        {   
+                            mlock.lock();
+                            explosions.push_back(Explosion(&explosion, tank.position));
+                            mlock.unlock();
+
+                            if (tank.hit(rocket_hit_value))
+                            {
+                                mlock.lock();
+                                smokes.push_back(Smoke(smoke, tank.position - vec2(7, 24)));
+                                mlock.unlock();
+                            }
+
+                            rocket->active = false;
+                            break;
+                        }
+                    }
+
+
+                    // }
+
+
                 }
             }
-
-
-        }
-
-
+            }));
+        
     }
+    
+    for (future<void>& th : threads) {
+        th.wait();
+    }
+
+    
     
 
     vector<vec2> points;
