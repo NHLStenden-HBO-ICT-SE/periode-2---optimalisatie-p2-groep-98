@@ -132,7 +132,7 @@ vec2 p0;
 vector<vec2> points_on_hull;
 
 // Find next to top in a stack
-vec2 nextToTop(stack<vec2>& S)
+vec2 next_to_top(stack<vec2>& S)
 {
     vec2 p = S.top();
     S.pop();
@@ -150,7 +150,7 @@ void swap(vec2& p1, vec2& p2)
 }
 
 // Square of distance between p1 and p2
-int distSq(vec2 p1, vec2 p2)
+int distance_square(vec2 p1, vec2 p2)
 {
     return (p1.x - p2.x) * (p1.x - p2.x) +
         (p1.y - p2.y) * (p1.y - p2.y);
@@ -179,7 +179,7 @@ int compare(const void* vp1, const void* vp2)
     // Find orientation
     int o = orientation(p0, *p1, *p2);
     if (o == 0)
-        return (distSq(p0, *p2) >= distSq(p0, *p1)) ? -1 : 1;
+        return (distance_square(p0, *p2) >= distance_square(p0, *p1)) ? -1 : 1;
 
     return (o == 2) ? -1 : 1;
 }
@@ -235,7 +235,7 @@ void convexHull(vector<vec2> points)
     for (int i = 3; i < m; i++)
     {
         // Keep removing top while the angle formed by points next-to-top, top, and points[i] makes a non-left turn
-        while (S.size() > 1 && orientation(nextToTop(S), S.top(), points.at(i)) != 2)
+        while (S.size() > 1 && orientation(next_to_top(S), S.top(), points.at(i)) != 2)
             S.pop();
         S.push(points.at(i));
     }
