@@ -81,6 +81,7 @@ using namespace std;
 
 using namespace Tmpl8;
 #include "collidable.h"
+#include "collision_grid.h"
 
 #include "thread_pool.h"
 #include "tank.h"

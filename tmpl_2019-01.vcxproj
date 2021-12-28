@@ -120,6 +120,7 @@
   <!-- END Custom section -->
   <ItemGroup>
     <ClCompile Include="collidable.cpp" />
+    <ClCompile Include="collision_grid.cpp" />
     <ClCompile Include="explosion.cpp" />
     <ClCompile Include="game.cpp" />
     <ClCompile Include="particle_beam.cpp" />
@@ -134,6 +135,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="collidable.h" />
+    <ClInclude Include="collision_grid.h" />
     <ClInclude Include="explosion.h" />
     <ClInclude Include="game.h" />
     <ClInclude Include="particle_beam.h" />
