@@ -15,7 +15,7 @@ namespace Tmpl8
     class TerrainTile
     {
     public:
-        TerrainTile *up, *down, *left, *right, *r_up, *r_down, *l_up, *l_down;
+        //TerrainTile *up, *down, *left, *right;
         vector<TerrainTile*> exits;
         bool visited = false;
 
@@ -24,13 +24,7 @@ namespace Tmpl8
 
         TileType tile_type;
         
-        void defineTilesAround(TerrainTile* up, TerrainTile* down, TerrainTile* left, TerrainTile* right, TerrainTile* r_up, TerrainTile* r_down, TerrainTile* l_up, TerrainTile* l_down);
         
-        vector<Collidable*> getObjects();
-        vector<Collidable*> getPossibleCollidables();
-        vector<Collidable*> objects;
-        
-
     private:
         
 
@@ -49,11 +43,7 @@ namespace Tmpl8
         vector<vec2> get_route(const Tank& tank, const vec2& target);
 
         float get_speed_modifier(const vec2& position) const;
-        void initializeTilesNeighbours();
-        TerrainTile* getTile(int x, int y);
-        void updateTile(Collidable* col, vec2& pos);
-        TerrainTile* getTileFor(Collidable* col, const vec2& pos);
-        void clearGrid();
+        
 
     private:
 

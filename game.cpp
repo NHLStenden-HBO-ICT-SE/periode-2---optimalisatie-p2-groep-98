@@ -50,6 +50,11 @@ const int num_of_threads = std::thread::hardware_concurrency() * 2;
 ThreadPool* pool = new ThreadPool(num_of_threads);
 
 
+
+
+CollisionGrid* grid = new CollisionGrid();
+
+
 // -----------------------------------------------------------
 // Initialize the simulation state
 // This function does not count for the performance multiplier
@@ -265,7 +270,8 @@ void Game::update(float deltaTime)
     //Initializing routes here so it gets counted for performance..
     if (frame_count == 0)
     {
-        background_terrain.initializeTilesNeighbours();
+        //background_terrain.initializeTilesNeighbours();
+        grid->initializeTilesNeighbours();
         for (Tank& t : tanks) {
             t.set_route(background_terrain.get_route(t, t.target));
         }
@@ -279,20 +285,25 @@ void Game::update(float deltaTime)
     //Check tank collision and nudge tanks away from each other    //Optimize, create a list with active tanks instead of checking in the tanks list
     
 
-    background_terrain.clearGrid();
+
+
+
+    grid->clearGrid();
+
+    vector<Tank> tt;
     for (Tank& t : tanks) {
-        background_terrain.updateTile(&t, t.getCurrentPosition());
-        
+        tt.push_back(t);
+        grid->updateTile(&t, t.getCurrentPosition());
     }
     for (Rocket& r : rockets) {
-        background_terrain.updateTile(&r, r.getCurrentPosition());
+        grid->updateTile(&r, r.getCurrentPosition());
     }
 
     
     int collisions = 0;
     for (Tank& tank : tanks) {
         //cout << "POS " << tank.get_position().x << endl;
-        TerrainTile* til = background_terrain.getTileFor(&tank, tank.get_position());
+        CollisionTile* til = grid->getTileFor(&tank, tank.get_position());
         vector<Collidable*> possible_collisions = til->getPossibleCollidables();
         for (Collidable* t2 : possible_collisions) {
             if (&tank == t2) continue;

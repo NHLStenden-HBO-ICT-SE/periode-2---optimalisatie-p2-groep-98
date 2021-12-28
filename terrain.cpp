@@ -224,43 +224,9 @@ namespace Tmpl8
         }
     }
 
-    void Terrain::initializeTilesNeighbours()
-    {
-        for (size_t y = 0; y < tiles.size(); y++)
-        {
-            array< TerrainTile, terrain_width> horizontal = tiles.at(y);
-            for (size_t x = 0; x < horizontal.size(); x++)
-            {
-                TerrainTile& vertical = horizontal.at(x);
-                TerrainTile* up = this->getTile(x, y + 1);
-                TerrainTile* down = this->getTile(x, y - 1);
-                TerrainTile* left = this->getTile(x-1, y);
-                TerrainTile* right = this->getTile(x, y);
+   
 
-                TerrainTile* r_up = this->getTile(x+1, y + 1);
-                TerrainTile* l_up = this->getTile(x-1, y + 1);
-
-                TerrainTile* r_down = this->getTile(x+1, y - 1);
-                TerrainTile* l_down = this->getTile(x - 1, y - 1);
-
-                this->getTile(x, y)->defineTilesAround(up, down, left, right, r_up, r_down, l_up, l_down);
-
-            }
-        }
-    }
-
-    TerrainTile* Terrain::getTile(int x, int y)
-    {
-        TerrainTile* tile;
-        try {
-            tile = &tiles.at(y).at(x);
-
-        }
-        catch (const std::out_of_range& oor) {
-            return nullptr;
-        }
-        return tile;
-    }
+    
 
     bool Terrain::is_accessible(int y, int x)
     {
@@ -278,82 +244,6 @@ namespace Tmpl8
     }
 
 
-
-    void Terrain::updateTile(Collidable* col, vec2& pos)
-    {
-        TerrainTile* tile = getTileFor(col,pos);
-
-        tile->objects.push_back(col);
-    }
-
-    TerrainTile* Terrain::getTileFor(Collidable* col, const vec2& pos)
-    {
-        
-        const size_t pos_x = pos.x / sprite_size;
-        const size_t pos_y = pos.y / sprite_size;
-        //cout << pos_x << " : " << pos_y << endl;
-        TerrainTile* tile;
-        //tile = &(tiles.at(pos_y).at(pos_x));
-        //cout << "size: " << tile->objects.size() << "\n---" << endl;
-
-        
-        return &tiles.at(pos_y).at(pos_x);
-    }
-
-    void Terrain::clearGrid()
-    {
-
-        for (size_t y = 0; y < tiles.size(); y++)
-        {
-            array< TerrainTile, terrain_width> &horizontal = tiles.at(y);
-            for (size_t x = 0; x < horizontal.size(); x++)
-            {
-                TerrainTile& item = horizontal.at(x);
-                
-
-                item.objects.clear();
-                
-            }
-        }
-
-    }
-
-    
-
-    void TerrainTile::defineTilesAround(TerrainTile* up, TerrainTile* down, TerrainTile* left, TerrainTile* right, TerrainTile* r_up, TerrainTile* r_down, TerrainTile* l_up, TerrainTile* l_down)
-    {
-        this->up = up;
-        this->down = down;
-        this->right = right;
-        this->left = left;
-        this->r_up = r_up;
-        this->r_down = r_down;
-        this->l_up = l_up;
-        this->l_down = l_down;
-    }
-
-    vector<Collidable*> TerrainTile::getObjects()
-    {
-        return this->objects;
-    }
-
-    vector<Collidable*> TerrainTile::getPossibleCollidables()
-    {
-        vector<Collidable*> results = this->objects;
-
-        results.insert(results.end(), this->up->objects.begin(), this->up->objects.end());
-        results.insert(results.end(), this->down->objects.begin(), this->down->objects.end());
-        results.insert(results.end(), this->right->objects.begin(), this->right->objects.end());
-        results.insert(results.end(), this->left->objects.begin(), this->left->objects.end());
-        results.insert(results.end(), this->r_up->objects.begin(), this->r_up->objects.end());
-        results.insert(results.end(), this->r_down->objects.begin(), this->r_down->objects.end());
-        results.insert(results.end(), this->l_up->objects.begin(), this->l_up->objects.end());
-        results.insert(results.end(), this->l_down->objects.begin(), this->l_down->objects.end());
-        
-
-        return results;
-
-    }
 
     
     
