@@ -51,8 +51,86 @@ const static float rocket_radius = 5.f;
 const int NUM_OF_THREADS = std::thread::hardware_concurrency() * 2;
 ThreadPool* pool = new ThreadPool(NUM_OF_THREADS);
 std::mutex mlock;
+vector<Tank> toSort;
+
+void merge(vector<Tank>& list, int const left, int const mid, int const right)
+{
+    const int subList1 = mid - left + 1;
+    const int subList2 = right - mid;
 
 
+    //list.begin() + left, list.begin() + left + subArrayOne
+    //list.begin() + mid, list.begin() + mid + subArrayTwo
+    vector<Tank> leftArray = {  };
+    vector<Tank> rightArray = {  };
+
+
+
+    //De list splitten in de 2 sublijsten
+    for (int i = 0; i < subList1; i++) {
+        leftArray.push_back(list.at(left + i));
+
+    }
+    for (int j = 0; j < subList2; j++) {
+        rightArray.push_back(list.at(mid + 1 + j));
+
+    }
+
+
+    int indexList1 = 0;
+    int indexList2 = 0;
+    int indexMerged = left;
+
+
+    while (indexList1 < subList1 && indexList2 < subList2) {
+        if (leftArray[indexList1].health <= rightArray[indexList2].health) {
+            list[indexMerged] = leftArray[indexList1];
+            indexList1++;
+        }
+        else {
+            list[indexMerged] = rightArray[indexList2];
+            indexList2++;
+        }
+        indexMerged++;
+    }
+
+    while (indexList1 < subList1) {
+        list[indexMerged] = leftArray[indexList1];
+        indexList1++;
+        indexMerged++;
+    }
+
+    while (indexList2 < subList2) {
+        list[indexMerged] = rightArray[indexList2];
+        indexList2++;
+        indexMerged++;
+    }
+
+}
+
+void merge_sort(vector<Tank>& list, int const begin, int const end, int depth)
+{
+    if (begin >= end) {
+        return;
+    }
+    int mid = begin + (end - begin) / 2;
+
+    if (pow(2, depth) < NUM_OF_THREADS) {
+        future<void> x = pool->enqueue([&]() {
+            merge_sort(list, begin, mid, depth + 1);
+            });
+        merge_sort(list, mid + 1, end, depth + 1);
+        x.wait();
+    }
+    else {
+        merge_sort(list, begin, mid, depth + 1);
+        merge_sort(list, mid + 1, end, depth + 1);
+
+    }
+
+    merge(list, begin, mid, end);
+
+}
 
 
 CollisionGrid* grid = new CollisionGrid();
@@ -330,10 +408,6 @@ void convexHull(vector<vec2> points)
 }
 
 
-
-
-
-
 // -----------------------------------------------------------
 // Update the game state:
 // Move all objects
@@ -352,23 +426,40 @@ void Game::update(float deltaTime)
         for (Tank& t : tanks) {
             t.set_route(background_terrain.get_route(t, t.target));
         }
+        for (Particle_beam& particle_beam : particle_beams) {
+            grid->updateTile(&particle_beam);
+
+        }
     }
 
-   
+    toSort.clear();
+    for (Tank t : tanks) {
+     
+        toSort.push_back(t);
+    }
+    pool->enqueue([&]() {
+        merge_sort(toSort, 0, tanks.size() - 1, 0);
+
+        });
+
+
     //Check tank collision and nudge tanks away from each other    //Optimize, create a list with active tanks instead of checking in the tanks list
 
 
 
     grid->clearGrid();
 
+    
+
     vector<Tank> tt;
     for (Tank& t : tanks) {
         tt.push_back(t);
-        grid->updateTile(&t, t.getCurrentPosition());
+        grid->updateTile(&t);
     }
     for (Rocket& r : rockets) {
-        grid->updateTile(&r, r.getCurrentPosition());
+        grid->updateTile(&r);
     }
+    
 
 
     int collisions = 0;
@@ -383,6 +474,7 @@ void Game::update(float deltaTime)
     
     vector<future<void>> threads;
 
+    //COLLISION DETECTION
     for (size_t x = 0; x < spliter; x++)
     {
         int startAt = 0;
@@ -393,15 +485,34 @@ void Game::update(float deltaTime)
                 //for (Tank& tank : tanks) {
 
                 Tank& tank = tanks.at(i + startAt);
-                CollisionTile* til = grid->getTileFor(&tank, tank.get_position());
+                if (!tank.active) continue;
+                CollisionTile* til = grid->getTileFor(tank.get_position());
                 vector<Collidable*> possible_collisions = til->getPossibleCollidables();
-                for (Collidable* t2 : possible_collisions) {
-                    if (&tank == t2) continue;
+                for (Collidable* other : possible_collisions) {
+                    if (&tank == other) continue;
 
-                    vec2 dir = tank.get_position() - t2->getCurrentPosition();
+                    //Collidable for making sure the tank only hits the particle once in a frame
+                    // Because multiple tiles around the tank contain the same particle collidable
+                    Particle_beam *hitParticle = nullptr;
+
+                    if (other->collider_type == Collider::BEAM && hitParticle != other) {
+                        Particle_beam particle_beam = *dynamic_cast<Particle_beam*>(other);
+                        vec2 pos = tank.getCurrentPosition();
+                        float radius = tank.getCollisionRadius();
+                        if (tank.active && particle_beam.rectangle.intersects_circle(pos, radius) )
+                        {
+                            if (tank.hit(particle_beam.damage))
+                            {
+                                hitParticle = &particle_beam;
+                                smokes.push_back(Smoke(smoke, tank.position - vec2(0, 48)));
+                            }
+                        }
+                    }
+
+                    vec2 dir = tank.get_position() - other->getCurrentPosition();
                     float dir_squared_len = dir.sqr_length();
 
-                    float col_squared_len = (tank.get_collision_radius() + t2->getCollisionRadius());
+                    float col_squared_len = (tank.get_collision_radius() + other->getCollisionRadius());
                     col_squared_len *= col_squared_len;
 
                     //No collision > continue in for loop
@@ -412,14 +523,14 @@ void Game::update(float deltaTime)
                     }
 
                     //Tank collision
-                    if (t2->collider_type == Collider::TANK) {
+                    if (other->collider_type == Collider::TANK) {
                         tank.push(dir.normalized(), 1.f);
                     }
 
 
                     //Rocket collision
-                    if (t2->collider_type == Collider::ROCKET) {
-                        Rocket* rocket = dynamic_cast<Rocket*>(t2);
+                    if (other->collider_type == Collider::ROCKET) {
+                        Rocket* rocket = dynamic_cast<Rocket*>(other);
                         if (tank.active && (tank.allignment != rocket->allignment) && rocket->intersects(tank.position, tank.collision_radius))
                         {   
                             mlock.lock();
@@ -540,7 +651,7 @@ void Game::update(float deltaTime)
         particle_beam.tick(tanks);
 
         //Damage all tanks within the damage window of the beam (the window is an axis-aligned bounding box)
-        for (Tank& tank : tanks)
+        /*for (Tank& tank : tanks)
         {
             if (tank.active && particle_beam.rectangle.intersects_circle(tank.get_position(), tank.get_collision_radius()))
             {
@@ -549,7 +660,7 @@ void Game::update(float deltaTime)
                     smokes.push_back(Smoke(smoke, tank.position - vec2(0, 48)));
                 }
             }
-        }
+        }*/
     }
 
     //Update explosion sprites and remove when done with remove erase idiom
@@ -560,72 +671,7 @@ void Game::update(float deltaTime)
 
     explosions.erase(std::remove_if(explosions.begin(), explosions.end(), [](const Explosion& explosion) { return explosion.done(); }), explosions.end());
 }
-void merge(vector<Tank>& list, int const left, int const mid, int const right, string sortOn)
-{
-    const int subList1 = mid - left + 1;
-    const int subList2 = right - mid;
 
-
-    //list.begin() + left, list.begin() + left + subArrayOne
-    //list.begin() + mid, list.begin() + mid + subArrayTwo
-    vector<Tank> leftArray = {  };
-    vector<Tank> rightArray = {  };
-
-
-
-    //De list splitten in de 2 sublijsten
-    for (int i = 0; i < subList1; i++) {
-        leftArray.push_back(list.at(left + i));
-
-    }
-    for (int j = 0; j < subList2; j++) {
-        rightArray.push_back(list.at(mid + 1 + j));
-
-    }
-
-
-    int indexList1 = 0;
-    int indexList2 = 0;
-    int indexMerged = left;
-
-
-    while (indexList1 < subList1 && indexList2 < subList2) {
-        if (leftArray[indexList1].getProperty(sortOn) <= rightArray[indexList2].getProperty(sortOn)) {
-            list[indexMerged] = leftArray[indexList1];
-            indexList1++;
-        }
-        else {
-            list[indexMerged] = rightArray[indexList2];
-            indexList2++;
-        }
-        indexMerged++;
-    }
-
-    while (indexList1 < subList1) {
-        list[indexMerged] = leftArray[indexList1];
-        indexList1++;
-        indexMerged++;
-    }
-
-    while (indexList2 < subList2) {
-        list[indexMerged] = rightArray[indexList2];
-        indexList2++;
-        indexMerged++;
-    }
-
-}
-
-void merge_sort(vector<Tank>& list, int const begin, int const end, string sortOn)
-{
-    if (begin >= end) {
-        return;
-    }
-    int mid = begin + (end - begin) / 2;
-    merge_sort(list, begin, mid, sortOn);
-    merge_sort(list, mid + 1, end, sortOn);
-    merge(list, begin, mid, end, sortOn);
-
-}
 
 
 // -----------------------------------------------------------
@@ -685,15 +731,14 @@ void Game::draw()
 
     //Draw sorted health bars
 
-    const int NUM_TANKS = tanks.size();
 
 
-    vector<Tank> toSort;
+    /*vector<Tank> toSort;
     for (Tank t : tanks) {
         toSort.push_back(t);
     }
 
-    //merge_sort(toSort, 0, NUM_TANKS - 1, "health");
+    merge_sort(toSort, 0, tanks.size() -1, 0);*/
     //toSort.erase(std::remove_if(toSort.begin(), toSort.end(), [](Tank* tank) { return !tank->active; }), toSort.end());
 
     std::vector<Tank> sorted_tanks_blue;

@@ -20,12 +20,13 @@ class CollisionGrid
 public:
     void initializeTilesNeighbours();
     CollisionTile* getTile(int x, int y);
-    void updateTile(Collidable* col, vec2& pos);
-    CollisionTile* getTileFor(Collidable* col, const vec2& pos);
+    void updateTile(Collidable* col);
+    CollisionTile* getTileFor(const vec2& pos);
     void clearGrid();
 
 
 private:
+    vec2 getTileIndex(const vec2 pos);
     //Screen: 1280 x 720
     //Original width: 80
     //Original height: 45

@@ -2,7 +2,7 @@
 #include "precomp.h"
 
 enum class Collider {
-	TANK, ROCKET
+	TANK, ROCKET, BEAM
 };
 
 class Collidable
