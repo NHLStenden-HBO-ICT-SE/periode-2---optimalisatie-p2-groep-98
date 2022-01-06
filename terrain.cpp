@@ -52,27 +52,27 @@ namespace Tmpl8
                     {
                     case 'G':
                         //terrain_grid[row][collumn] = 1;
-                        tiles.at(row).at(collumn).tile_type = TileType::GRASS;
+                        Terrain::tiles.at(row).at(collumn).tile_type = TileType::GRASS;
                         break;
                     case 'F':
                         //terrain_grid[row][collumn] = 1;
-                        tiles.at(row).at(collumn).tile_type = TileType::FORREST;
+                        Terrain::tiles.at(row).at(collumn).tile_type = TileType::FORREST;
                         break;
                     case 'R':
                         //terrain_grid[row][collumn] = 1;
-                        tiles.at(row).at(collumn).tile_type = TileType::ROCKS;
+                        Terrain::tiles.at(row).at(collumn).tile_type = TileType::ROCKS;
                         break;
                     case 'M':
                         //terrain_grid[row][collumn] = 0;
-                        tiles.at(row).at(collumn).tile_type = TileType::MOUNTAINS;
+                        Terrain::tiles.at(row).at(collumn).tile_type = TileType::MOUNTAINS;
                         break;
                     case 'W':
                         //terrain_grid[row][collumn] = 0;
-                        tiles.at(row).at(collumn).tile_type = TileType::WATER;
+                        Terrain::tiles.at(row).at(collumn).tile_type = TileType::WATER;
                         break;
                     default:
                         //terrain_grid[row][collumn] = 1;
-                        tiles.at(row).at(collumn).tile_type = TileType::GRASS;
+                        Terrain::tiles.at(row).at(collumn).tile_type = TileType::GRASS;
                         break;
                     }
                 }
@@ -85,17 +85,17 @@ namespace Tmpl8
         }
 
         //Instantiate tiles for path planning
-        for (size_t y = 0; y < tiles.size(); y++)
+        for (size_t y = 0; y < Terrain::tiles.size(); y++)
         {
-            for (size_t x = 0; x < tiles.at(y).size(); x++)
+            for (size_t x = 0; x < Terrain::tiles.at(y).size(); x++)
             {
-                tiles.at(y).at(x).position_x = x;
-                tiles.at(y).at(x).position_y = y;
+                Terrain::tiles.at(y).at(x).position_x = x;
+                Terrain::tiles.at(y).at(x).position_y = y;
 
-                if (is_accessible(y, x + 1)) { tiles.at(y).at(x).exits.push_back(&tiles.at(y).at(x + 1)); }
-                if (is_accessible(y, x - 1)) { tiles.at(y).at(x).exits.push_back(&tiles.at(y).at(x - 1)); }
-                if (is_accessible(y + 1, x)) { tiles.at(y).at(x).exits.push_back(&tiles.at(y + 1).at(x)); }
-                if (is_accessible(y - 1, x)) { tiles.at(y).at(x).exits.push_back(&tiles.at(y - 1).at(x)); }
+                if (is_accessible(y, x + 1)) { Terrain::tiles.at(y).at(x).exits.push_back(&Terrain::tiles.at(y).at(x + 1)); }
+                if (is_accessible(y, x - 1)) { Terrain::tiles.at(y).at(x).exits.push_back(&Terrain::tiles.at(y).at(x - 1)); }
+                if (is_accessible(y + 1, x)) { Terrain::tiles.at(y).at(x).exits.push_back(&Terrain::tiles.at(y + 1).at(x)); }
+                if (is_accessible(y - 1, x)) { Terrain::tiles.at(y).at(x).exits.push_back(&Terrain::tiles.at(y - 1).at(x)); }
             }
         }
     }
@@ -108,14 +108,14 @@ namespace Tmpl8
     void Terrain::draw(Surface* target) const
     {
 
-        for (size_t y = 0; y < tiles.size(); y++)
+        for (size_t y = 0; y < Terrain::tiles.size(); y++)
         {
-            for (size_t x = 0; x < tiles.at(y).size(); x++)
+            for (size_t x = 0; x < Terrain::tiles.at(y).size(); x++)
             {
                 int posX = (x * sprite_size) + HEALTHBAR_OFFSET;
                 int posY = y * sprite_size;
 
-                switch (tiles.at(y).at(x).tile_type)
+                switch (Terrain::tiles.at(y).at(x).tile_type)
                 {
                 case TileType::GRASS:
                     tile_grass->draw(target, posX, posY);
@@ -197,7 +197,7 @@ namespace Tmpl8
 
     // A Utility Function to trace the path from the source
     // to destination
-    void trace_path(cell cellDetails[][terrain_width], vec2 dest)
+    void trace_path(cell cell_details[][terrain_width], vec2 dest)
     {
         cout << "\nThe Path is ";
         int row = dest.x;
@@ -205,11 +205,11 @@ namespace Tmpl8
 
         stack<Pair> Path;
 
-        while (!(cellDetails[row][col].parent_i == row
-            && cellDetails[row][col].parent_j == col)) {
+        while (!(cell_details[row][col].parent_i == row
+            && cell_details[row][col].parent_j == col)) {
             Path.push(make_pair(row, col));
-            int temp_row = cellDetails[row][col].parent_i;
-            int temp_col = cellDetails[row][col].parent_j;
+            int temp_row = cell_details[row][col].parent_i;
+            int temp_col = cell_details[row][col].parent_j;
             row = temp_row;
             col = temp_col;
         }
@@ -756,7 +756,7 @@ namespace Tmpl8
         //Init queue with start tile
         std::queue<vector<TerrainTile*>> queue;
         queue.emplace();
-        queue.back().push_back(&tiles.at(pos_y).at(pos_x));
+        queue.back().push_back(&Terrain::tiles.at(pos_y).at(pos_x));
 
         std::vector<TerrainTile*> visited;
 
@@ -817,7 +817,7 @@ namespace Tmpl8
         const size_t pos_x = position.x / sprite_size;
         const size_t pos_y = position.y / sprite_size;
 
-        switch (tiles.at(pos_y).at(pos_x).tile_type)
+        switch (Terrain::tiles.at(pos_y).at(pos_x).tile_type)
         {
         case TileType::GRASS:
             return 1.0f;
@@ -846,7 +846,7 @@ namespace Tmpl8
         if ((x >= 0 && x < terrain_width) && (y >= 0 && y < terrain_height))
         {
             //Inaccessible terrain check
-            if (tiles.at(y).at(x).tile_type != TileType::MOUNTAINS && tiles.at(y).at(x).tile_type != TileType::WATER)
+            if (Terrain::tiles.at(y).at(x).tile_type != TileType::MOUNTAINS && Terrain::tiles.at(y).at(x).tile_type != TileType::WATER)
             {
                 return true;
             }

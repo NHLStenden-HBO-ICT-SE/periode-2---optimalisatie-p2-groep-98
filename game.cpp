@@ -265,11 +265,10 @@ void Game::update(float deltaTime)
                 t.set_route(background_terrain.get_route(t, t.target));
                 });
             */
-            background_terrain.a_star_search(t, t.target);
+            Terrain::a_star_search(t, t.target);
             //t.set_route(background_terrain.get_route(t, t.target));
         }
     }
-
     //Check tank collision and nudge tanks away from each other
     //Optimize, create a list with active tanks instead of checking in the tanks list
 
