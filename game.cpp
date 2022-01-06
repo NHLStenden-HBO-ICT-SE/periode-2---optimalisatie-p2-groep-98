@@ -52,6 +52,8 @@ const int NUM_OF_THREADS = std::thread::hardware_concurrency() * 2;
 ThreadPool* pool = new ThreadPool(NUM_OF_THREADS);
 std::mutex mlock;
 
+vector<Tank> inactive_tanks;
+
 
 
 
@@ -299,80 +301,83 @@ void Game::update(float deltaTime)
         int startAt = 0;
         startAt = x * tanks.size() / spliter;
         threads.push_back(pool->enqueue([&, startAt]() {
-            for (size_t i = 0; i < tanks.size() / spliter; i++)
-            {
-                //for (Tank& tank : tanks) {
+        for (size_t i = 0; i < tanks.size() / spliter; i++)
+        {
+            //for (Tank& tank : tanks) {
 
-                Tank& tank = tanks.at(i + startAt);
-                if (!tank.active) continue;
-                CollisionTile* til = grid->getTileFor(tank.get_position());
-                vector<Collidable*> possible_collisions = til->getPossibleCollidables();
-                for (Collidable* other : possible_collisions) {
-                    if (&tank == other) continue;
+            Tank& tank = tanks.at(i + startAt);
 
-                    //Collidable for making sure the tank only hits the particle once in a frame
-                    // Because multiple tiles around the tank contain the same particle collidable
-                    Particle_beam *hitParticle = nullptr;
+            if (!tank.active)
+                continue;
+                
+                
+            CollisionTile* til = grid->getTileFor(tank.get_position());
+            vector<Collidable*> possible_collisions = til->getPossibleCollidables();
+            for (Collidable* other : possible_collisions) {
+                if (&tank == other) continue;
 
-                    if (other->collider_type == Collider::BEAM && hitParticle != other) {
-                        Particle_beam particle_beam = *dynamic_cast<Particle_beam*>(other);
-                        vec2 pos = tank.getCurrentPosition();
-                        float radius = tank.getCollisionRadius();
-                        if (tank.active && particle_beam.rectangle.intersects_circle(pos, radius) )
-                        {
-                            if (tank.hit(particle_beam.damage))
-                            {
-                                hitParticle = &particle_beam;
-                                smokes.push_back(Smoke(smoke, tank.position - vec2(0, 48)));
-                            }
-                        }
-                    }
+                //Collidable for making sure the tank only hits the particle once in a frame
+                // Because multiple tiles around the tank contain the same particle collidable
+                Particle_beam *hitParticle = nullptr;
 
-                    vec2 dir = tank.get_position() - other->getCurrentPosition();
-                    float dir_squared_len = dir.sqr_length();
-
-                    float col_squared_len = (tank.get_collision_radius() + other->getCollisionRadius());
-                    col_squared_len *= col_squared_len;
-
-                    //No collision > continue in for loop
-                    if (dir_squared_len > col_squared_len)
+                if (other->collider_type == Collider::BEAM && hitParticle != other) {
+                    Particle_beam particle_beam = *dynamic_cast<Particle_beam*>(other);
+                    vec2 pos = tank.getCurrentPosition();
+                    float radius = tank.getCollisionRadius();
+                    if (tank.active && particle_beam.rectangle.intersects_circle(pos, radius) )
                     {
-                        continue;
-
-                    }
-
-                    //Tank collision
-                    if (other->collider_type == Collider::TANK) {
-                        tank.push(dir.normalized(), 1.f);
-                    }
-
-
-                    //Rocket collision
-                    if (other->collider_type == Collider::ROCKET) {
-                        Rocket* rocket = dynamic_cast<Rocket*>(other);
-                        if (tank.active && (tank.allignment != rocket->allignment) && rocket->intersects(tank.position, tank.collision_radius))
-                        {   
-                            mlock.lock();
-                            explosions.push_back(Explosion(&explosion, tank.position));
-                            mlock.unlock();
-
-                            if (tank.hit(rocket_hit_value))
-                            {
-                                mlock.lock();
-                                smokes.push_back(Smoke(smoke, tank.position - vec2(7, 24)));
-                                mlock.unlock();
-                            }
-
-                            rocket->active = false;
-                            break;
+                        if (tank.hit(particle_beam.damage))
+                        {
+                            hitParticle = &particle_beam;
+                            smokes.push_back(Smoke(smoke, tank.position - vec2(0, 48)));
                         }
                     }
+                }
 
+                vec2 dir = tank.get_position() - other->getCurrentPosition();
+                float dir_squared_len = dir.sqr_length();
 
-                    // }
+                float col_squared_len = (tank.get_collision_radius() + other->getCollisionRadius());
+                col_squared_len *= col_squared_len;
 
+                //No collision > continue in for loop
+                if (dir_squared_len > col_squared_len)
+                {
+                    continue;
 
                 }
+
+                //Tank collision
+                if (other->collider_type == Collider::TANK) {
+                    tank.push(dir.normalized(), 1.f);
+                }
+
+
+                //Rocket collision
+                if (other->collider_type == Collider::ROCKET) {
+                    Rocket* rocket = dynamic_cast<Rocket*>(other);
+                    if (tank.active && (tank.allignment != rocket->allignment) && rocket->intersects(tank.position, tank.collision_radius))
+                    {   
+                        mlock.lock();
+                        explosions.push_back(Explosion(&explosion, tank.position));
+                        mlock.unlock();
+
+                        if (tank.hit(rocket_hit_value))
+                        {
+                            mlock.lock();
+                            smokes.push_back(Smoke(smoke, tank.position - vec2(7, 24)));
+                            mlock.unlock();
+                        }
+
+                        rocket->active = false;
+                        break;
+                    }
+                }
+
+
+
+
+            }
             }
             }));
         
@@ -394,33 +399,34 @@ void Game::update(float deltaTime)
     //Calculate convex hull for 'rocket barrier'
     auto begin = chrono::high_resolution_clock::now();
     //Update tanks
+    for (Tank t : tanks) {
+        if (!t.active) {
+            inactive_tanks.push_back(t);
+        }
+    }
+    tanks.erase(std::remove_if(tanks.begin(), tanks.end(), [](const Tank& tank) { return !tank.active; }), tanks.end());
 
 
     for (Tank& tank : tanks)
     {
-        if (tank.active)
+                   
+        //Move tanks according to speed and nudges (see above) also reload
+        tank.tick(background_terrain);
+
+        //Shoot at closest target if reloaded
+        if (tank.rocket_reloaded())
         {
-            
+            Tank& target = find_closest_enemy(tank);
 
-            //Move tanks according to speed and nudges (see above) also reload
-            tank.tick(background_terrain);
+            rockets.push_back(Rocket(tank.position, (target.get_position() - tank.position).normalized() * 3, rocket_radius, tank.allignment, ((tank.allignment == RED) ? &rocket_red : &rocket_blue)));
 
-            
-
-            //Shoot at closest target if reloaded
-            if (tank.rocket_reloaded())
-            {
-                Tank& target = find_closest_enemy(tank);
-
-                rockets.push_back(Rocket(tank.position, (target.get_position() - tank.position).normalized() * 3, rocket_radius, tank.allignment, ((tank.allignment == RED) ? &rocket_red : &rocket_blue)));
-
-                tank.reload_rocket();
-            }
-            //Pushes points for use in convex hull
-            points.push_back({ tank.get_position().x, tank.get_position().y });
+            tank.reload_rocket();
         }
+        //Pushes points for use in convex hull
+        points.push_back({ tank.get_position().x, tank.get_position().y });
     }
-    tanks.erase(std::remove_if(tanks.begin(), tanks.end(), [](const Tank& tank) { return !tank.active; }), tanks.end());
+
+   
 
     //Calculates points_on_hull
     convex_hull(points);
@@ -515,7 +521,9 @@ void Game::draw()
     //Draw sprites
     for (Tank t : tanks) {
         t.draw(screen);
-
+    }
+    for (Tank t : inactive_tanks) {
+        t.draw(screen);
     }
     /*
     for (int i = 0; i < num_tanks_blue + num_tanks_red; i++)
