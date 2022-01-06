@@ -113,7 +113,6 @@ Tank& Game::find_closest_enemy(Tank& current_tank)
 {
     float closest_distance = numeric_limits<float>::infinity();
     int closest_index = 0;
-
     for (int i = 0; i < tanks.size(); i++)
     {
         if (tanks.at(i).allignment != current_tank.allignment && tanks.at(i).active)
@@ -130,7 +129,6 @@ Tank& Game::find_closest_enemy(Tank& current_tank)
     return tanks.at(closest_index);
 }
 
-vec2 p0;
 vector<vec2> points_on_hull;
 
 //Checks if a point lies on the left of an arbitrary angled line
@@ -139,109 +137,10 @@ bool Tmpl8::Game::left_of_line(vec2 line_start, vec2 line_end, vec2 point)
     return ((line_end.x - line_start.x) * (point.y - line_start.y) - (line_end.y - line_start.y) * (point.x - line_start.x)) < 0;
 }
 
-// Square of distance between p1 and p2
-float distance_square(vec2 p1, vec2 p2)
-{
-    return (p1.x - p2.x) * (p1.x - p2.x) +
-        (p1.y - p2.y) * (p1.y - p2.y);
-}
-
-// To find orientation of ordered triplet (p, q, r).
-// The function returns following values
-// 0 --> p, q and r are collinear
-// 1 --> Clockwise
-// 2 --> Counterclockwise
-int orientation(vec2 p, vec2 q, vec2 r)
-{
-    float val = (q.y - p.y) * (r.x - q.x) -
-        (q.x - p.x) * (r.y - q.y);
-
-    if (val == 0)
-        return 0;  // collinear
-    return (val > 0)
-        ? 1
-        : 2; // clock or counterclock wise
-}
-
-// A function used by library function qsort() to sort an array of points with respect to the first point
-int compare(vec2 point1, vec2 point2)
-{
-    vec2 p1 = point1;
-    vec2 p2 = point2;
-    int dir = orientation(p0, p1, p2);
-
-    if (dir == 0)
-        return (distance_square(p0, p2) >= distance_square(p0, p1)) ? -1 : 1;
-    return (dir == 2) ? -1 : 1;
-}
-
-void convex_merge(vector<vec2>& list, int const left, int const mid, int const right)
-{
-    const int subList1 = mid - left + 1;
-    const int subList2 = right - mid;
-
-
-    //list.begin() + left, list.begin() + left + subArrayOne
-    //list.begin() + mid, list.begin() + mid + subArrayTwo
-    vector<vec2> leftArray = {  };
-    vector<vec2> rightArray = {  };
 
 
 
-    //De list splitten in de 2 sublijsten
-    for (int i = 0; i < subList1; i++) {
-        leftArray.push_back(list.at(left + i));
 
-    }
-    for (int j = 0; j < subList2; j++) {
-        rightArray.push_back(list.at(mid + 1 + j));
-
-    }
-
-
-    int indexList1 = 0;
-    int indexList2 = 0;
-    int indexMerged = left;
-
-
-    while (indexList1 < subList1 && indexList2 < subList2) {
-        if (compare(leftArray[indexList1], rightArray[indexList2]) == -1) {
-            list[indexMerged] = leftArray[indexList1];
-            indexList1++;
-        }
-        else {
-            list[indexMerged] = rightArray[indexList2];
-            indexList2++;
-        }
-        indexMerged++;
-    }
-
-    while (indexList1 < subList1) {
-        list[indexMerged] = leftArray[indexList1];
-        indexList1++;
-        indexMerged++;
-    }
-
-    while (indexList2 < subList2) {
-        list[indexMerged] = rightArray[indexList2];
-        indexList2++;
-        indexMerged++;
-    }
-
-}
-
-
-void convex_merge_sort(vector<vec2>& list, int const begin, int const end)
-{
-    if (begin >= end) {
-        return;
-    }
-    int mid = begin + (end - begin) / 2;
-    convex_merge_sort(list, begin, mid);
-    convex_merge_sort(list, mid + 1, end);
-    convex_merge(list, begin, mid, end);
-
-}
 
 // Find next to top in a stack
 vec2 next_to_top(stack<vec2>& S)
@@ -262,7 +161,7 @@ void swap(vec2& p1, vec2& p2)
 }
 
 // Prints convex hull of a set of n points.
-void convexHull(vector<vec2> points)
+void convex_hull(vector<vec2> points)
 {
     int i = 0;
     // Find the bottommost point
@@ -281,17 +180,28 @@ void convexHull(vector<vec2> points)
 
     // Sort n-1 points with respect to the first point.
     // A point p1 comes before p2 in sorted output if p2 has larger polar angle (in counterclockwise direction) than p1
-    p0 = points.at(0);
-    convex_merge_sort(points, 0, points.size() - 1);
+
+    vec2* arr_points = new vec2[points.size() ];
+    for (size_t i = 0; i < points.size(); i++)
+    {
+        arr_points[i] = points.at(i);
+    }
+
+    Sorting::convex_merge_sort(arr_points, 0, points.size() - 1);
+
+    
+    int size = points.size();
+
+
 
     // If two or more points make same angle with p0,
     // Remove all but the one that is farthest from p0
     int m = 1;
-    for (int i = 1; i < points.size(); i++)
+    for (int i = 1; i < size; i++)
     {
         // Keep removing i while angle of i and i+1 is same with respect to p0
-        while (i < points.size() - 1 && orientation(p0, points.at(i),
-            points.at(i + 1)) == 0)
+        while (i < size - 1 && Sorting::orientation(arr_points[0], arr_points[i],
+            arr_points[i + 1]) == 0)
             i++;
 
 
@@ -304,17 +214,17 @@ void convexHull(vector<vec2> points)
         return;
 
     stack<vec2> S;
-    S.push(points.at(0));
-    S.push(points.at(1));
-    S.push(points.at(2));
+    S.push(arr_points[0]);
+    S.push(arr_points[1]);
+    S.push(arr_points[2]);
 
     // Process remaining n-3 points
     for (int i = 3; i < m; i++)
     {
         // Keep removing top while the angle formed by points next-to-top, top, and points[i] makes a non-left turn
-        while (S.size() > 1 && orientation(next_to_top(S), S.top(), points.at(i)) != 2)
+        while (S.size() > 1 && Sorting::orientation(next_to_top(S), S.top(), arr_points[i]) != 2)
             S.pop();
-        S.push(points.at(i));
+        S.push(arr_points[i]);
     }
 
     // Result stack has the output points
@@ -328,6 +238,7 @@ void convexHull(vector<vec2> points)
 
         i++;
     }
+    delete[] arr_points;
 }
 
 
@@ -483,15 +394,18 @@ void Game::update(float deltaTime)
     //Calculate convex hull for 'rocket barrier'
     auto begin = chrono::high_resolution_clock::now();
     //Update tanks
+
+
     for (Tank& tank : tanks)
     {
         if (tank.active)
         {
-            //Pushes points for use in convex hull
-            points.push_back({ tank.get_position().x, tank.get_position().y });
+            
 
             //Move tanks according to speed and nudges (see above) also reload
             tank.tick(background_terrain);
+
+            
 
             //Shoot at closest target if reloaded
             if (tank.rocket_reloaded())
@@ -502,12 +416,14 @@ void Game::update(float deltaTime)
 
                 tank.reload_rocket();
             }
+            //Pushes points for use in convex hull
+            points.push_back({ tank.get_position().x, tank.get_position().y });
         }
     }
     tanks.erase(std::remove_if(tanks.begin(), tanks.end(), [](const Tank& tank) { return !tank.active; }), tanks.end());
 
     //Calculates points_on_hull
-    convexHull(points);
+    convex_hull(points);
     //Draws all points of the forcefield
     for (vec2& point_on_hull : points_on_hull)
         forcefield_hull.push_back(point_on_hull);
@@ -535,7 +451,7 @@ void Game::update(float deltaTime)
 
     for (Rocket& rocket : rockets)
     {
-        if (rocket.active)
+        if (rocket.active && frame_count > 1)
         {
             for (size_t i = 0; i < forcefield_hull.size(); i++)
             {
@@ -681,8 +597,8 @@ void Game::draw()
     }
     auto begin = chrono::high_resolution_clock::now();
 
-    Sorting::merge_sort(blue_tanks, 0, blue_count -1);
-    Sorting::merge_sort(red_tanks, 0, red_count-1);
+    Sorting::health_merge_sort(blue_tanks, 0, blue_count -1);
+    Sorting::health_merge_sort(red_tanks, 0, red_count-1);
     auto end = chrono::high_resolution_clock::now();
     auto dur = end - begin;
     auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(dur).count();
