@@ -61,7 +61,7 @@ void CollisionGrid::updateTile(Collidable* col)
         //Get all the tiles in between the corners
         for (int x = p_lo.x; x < p_ro.x + 1; x++) {
             for (int y = p_lo.y; y < p_lb.y; y++) {
-                getTile(x,y)->objects.push_back(col);
+                getTile(x, y)->addCollidable(col);
                 cou++;
             }
         }
@@ -109,8 +109,7 @@ void CollisionGrid::clearGrid()
             CollisionTile& item = horizontal.at(x);
 
             //Remove everything except for the BEAMS
-            item.objects.erase(std::remove_if(item.objects.begin(), item.objects.end(), [](const Collidable* col) { return col->collider_type != Collider::BEAM; }), item.objects.end());;
-
+            item.objects.clear();
         }
     }
 }
@@ -129,9 +128,18 @@ vector<Collidable*> CollisionTile::getPossibleCollidables()
     
     for (CollisionTile* tile : this->neighbours) {
     results.insert(results.end(), tile->objects.begin(), tile->objects.end());
-
     }
+    results.insert(results.end(), this->beams.begin(), this->beams.end());
     return results;
+}
+
+void CollisionTile::addCollidable(Collidable* c)
+{
+    if (c->collider_type == Collider::BEAM) {
+        this->beams.push_back(c);
+        return;
+    }
+    this->objects.push_back(c);
 }
 
 void CollisionTile::addNeighbour(CollisionTile* neighbour)

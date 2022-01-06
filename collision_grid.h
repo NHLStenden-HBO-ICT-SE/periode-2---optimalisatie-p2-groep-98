@@ -10,7 +10,10 @@ public:
 
     vector<Collidable*> getObjects();
     vector<Collidable*> getPossibleCollidables();
+
     vector<Collidable*> objects;
+    vector<Collidable*> beams;
+    void addCollidable(Collidable* c);
     void addNeighbour(CollisionTile* neighbour);
 
 

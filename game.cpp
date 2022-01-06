@@ -51,86 +51,9 @@ const static float rocket_radius = 5.f;
 const int NUM_OF_THREADS = std::thread::hardware_concurrency() * 2;
 ThreadPool* pool = new ThreadPool(NUM_OF_THREADS);
 std::mutex mlock;
-vector<Tank> toSort;
-
-void merge(vector<Tank>& list, int const left, int const mid, int const right)
-{
-    const int subList1 = mid - left + 1;
-    const int subList2 = right - mid;
-
-
-    //list.begin() + left, list.begin() + left + subArrayOne
-    //list.begin() + mid, list.begin() + mid + subArrayTwo
-    vector<Tank> leftArray = {  };
-    vector<Tank> rightArray = {  };
 
 
 
-    //De list splitten in de 2 sublijsten
-    for (int i = 0; i < subList1; i++) {
-        leftArray.push_back(list.at(left + i));
-
-    }
-    for (int j = 0; j < subList2; j++) {
-        rightArray.push_back(list.at(mid + 1 + j));
-
-    }
-
-
-    int indexList1 = 0;
-    int indexList2 = 0;
-    int indexMerged = left;
-
-
-    while (indexList1 < subList1 && indexList2 < subList2) {
-        if (leftArray[indexList1].health <= rightArray[indexList2].health) {
-            list[indexMerged] = leftArray[indexList1];
-            indexList1++;
-        }
-        else {
-            list[indexMerged] = rightArray[indexList2];
-            indexList2++;
-        }
-        indexMerged++;
-    }
-
-    while (indexList1 < subList1) {
-        list[indexMerged] = leftArray[indexList1];
-        indexList1++;
-        indexMerged++;
-    }
-
-    while (indexList2 < subList2) {
-        list[indexMerged] = rightArray[indexList2];
-        indexList2++;
-        indexMerged++;
-    }
-
-}
-
-void merge_sort(vector<Tank>& list, int const begin, int const end, int depth)
-{
-    if (begin >= end) {
-        return;
-    }
-    int mid = begin + (end - begin) / 2;
-
-    if (pow(2, depth) < NUM_OF_THREADS) {
-        future<void> x = pool->enqueue([&]() {
-            merge_sort(list, begin, mid, depth + 1);
-            });
-        merge_sort(list, mid + 1, end, depth + 1);
-        x.wait();
-    }
-    else {
-        merge_sort(list, begin, mid, depth + 1);
-        merge_sort(list, mid + 1, end, depth + 1);
-
-    }
-
-    merge(list, begin, mid, end);
-
-}
 
 
 CollisionGrid* grid = new CollisionGrid();
@@ -432,21 +355,6 @@ void Game::update(float deltaTime)
         }
     }
 
-    toSort.clear();
-    for (Tank t : tanks) {
-     
-        toSort.push_back(t);
-    }
-    pool->enqueue([&]() {
-        merge_sort(toSort, 0, tanks.size() - 1, 0);
-
-        });
-
-
-    //Check tank collision and nudge tanks away from each other    //Optimize, create a list with active tanks instead of checking in the tanks list
-
-
-
     grid->clearGrid();
 
     
@@ -674,6 +582,8 @@ void Game::update(float deltaTime)
 
 
 
+
+
 // -----------------------------------------------------------
 // Draw all sprites to the screen
 // (It is not recommended to multi-thread this function)
@@ -733,31 +643,60 @@ void Game::draw()
 
 
 
-    /*vector<Tank> toSort;
+    /*std::vector<Tank> sorted_tanks_blue;
+    std::vector<Tank> sorted_tanks_red;*/
+    size_t blue_count = 0;
+    size_t red_count = 0;
     for (Tank t : tanks) {
-        toSort.push_back(t);
-    }
-
-    merge_sort(toSort, 0, tanks.size() -1, 0);*/
-    //toSort.erase(std::remove_if(toSort.begin(), toSort.end(), [](Tank* tank) { return !tank->active; }), toSort.end());
-
-    std::vector<Tank> sorted_tanks_blue;
-    std::vector<Tank> sorted_tanks_red;
-    for (int i = 0; i < toSort.size(); i++) {
-        Tank current_tank = toSort.at(i);
-
-        if (current_tank.allignment == BLUE) {
-            sorted_tanks_blue.emplace_back(current_tank);
+        if (!t.active) continue;
+        if (t.allignment == BLUE) {
+            blue_count++;
         }
         else {
-            sorted_tanks_red.emplace_back(current_tank);
+            red_count++;
+        }
+    }
+
+    int* blue_tanks = new int[blue_count];
+    int* red_tanks = new int[red_count];
+    
+        
+    size_t red = 0;
+    size_t blue = 0;
+
+    for (int i = 0; i < tanks.size(); i++) {
+        Tank current_tank = tanks.at(i);
+
+        if (current_tank.allignment == BLUE) {
+            //sorted_tanks_blue.emplace_back(current_tank);
+            blue_tanks[blue] = (int)current_tank.health;
+            blue++;
+        }
+        else {
+            //sorted_tanks_red.emplace_back(current_tank);
+            red_tanks[red] = (int)current_tank.health;
+            red++;
 
         }
     }
-    draw_health_bars(sorted_tanks_blue, 0);
+    auto begin = chrono::high_resolution_clock::now();
 
-    draw_health_bars(sorted_tanks_red, 1);
+    Sorting::merge_sort(blue_tanks, 0, blue_count -1);
+    Sorting::merge_sort(red_tanks, 0, red_count-1);
+    auto end = chrono::high_resolution_clock::now();
+    auto dur = end - begin;
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(dur).count();
+    //cout << ms << endl;
+    //toSort.erase(std::remove_if(toSort.begin(), toSort.end(), [](Tank* tank) { return !tank->active; }), toSort.end());
 
+    draw_health_bars(blue_tanks, 0, blue_count);
+
+    draw_health_bars(red_tanks, 1, red_count);
+
+    
+
+    delete[] blue_tanks;
+    delete[] red_tanks;
 
 
 }
@@ -772,7 +711,7 @@ void Game::draw()
 // -----------------------------------------------------------
 // Draw the health bars based on the given tanks health values
 // -----------------------------------------------------------
-void Tmpl8::Game::draw_health_bars(const std::vector<Tank>& sorted_tanks, const int team)
+void Tmpl8::Game::draw_health_bars(const int sorted_health[], const int team,const int team_size)
 {
     int health_bar_start_x = (team < 1) ? 0 : (SCRWIDTH - HEALTHBAR_OFFSET) - 1;
     int health_bar_end_x = (team < 1) ? health_bar_width : health_bar_start_x + health_bar_width - 1;
@@ -787,7 +726,7 @@ void Tmpl8::Game::draw_health_bars(const std::vector<Tank>& sorted_tanks, const 
     }
 
     //Draw the <SCRHEIGHT> least healthy tank health bars
-    int draw_count = std::min(SCRHEIGHT, (int)sorted_tanks.size());
+    int draw_count = std::min(SCRHEIGHT, team_size);
 
     //Draw height is the screenheight : 720 or the amount of thanks left
     for (int i = 0; i < draw_count - 1; i++)
@@ -796,7 +735,7 @@ void Tmpl8::Game::draw_health_bars(const std::vector<Tank>& sorted_tanks, const 
         int health_bar_start_y = i * 1;
         int health_bar_end_y = health_bar_start_y + 1;
 
-        float health_fraction = (1 - ((double)sorted_tanks.at(i).health / (double)tank_max_health));
+        float health_fraction = (1 - ((double)sorted_health[i] / (double)tank_max_health));
 
         if (team == 0) {
             screen->bar(health_bar_start_x + (int)((double)health_bar_width * health_fraction), health_bar_start_y, health_bar_end_x, health_bar_end_y, GREENMASK);
