@@ -34,7 +34,7 @@ namespace Tmpl8
 
         void update();
         void draw(Surface* target) const;
-        void aStarSearch(Tank src, vec2 dest);
+        void a_star_search(Tank src, vec2 dest);
         //Use Breadth-first search to find shortest route to the destination
         vector<vec2> get_route(const Tank& tank, const vec2& target);
 
