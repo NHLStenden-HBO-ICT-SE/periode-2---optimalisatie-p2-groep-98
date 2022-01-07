@@ -265,7 +265,18 @@ void Game::update(float deltaTime)
                 t.set_route(background_terrain.get_route(t, t.target));
                 });
             */
-            Terrain::a_star_search(t, t.target);
+            //Terrain::test(t, t.target);
+            background_terrain.setHeuristic(Heuristic::euclidean);
+            background_terrain.setDiagonalMovement(false);
+
+            std::cout << "Generate path ... \n";
+            auto path = background_terrain.findPath(t.get_position(), t.target);
+
+            for (auto& coordinate : path) {
+                std::cout << coordinate.x << " " << coordinate.y << "\n";
+            }
+            t.set_route(path);
+
             //t.set_route(background_terrain.get_route(t, t.target));
         }
     }

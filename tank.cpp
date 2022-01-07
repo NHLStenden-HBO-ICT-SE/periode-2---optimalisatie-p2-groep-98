@@ -94,7 +94,7 @@ void Tank::set_route(const std::vector<vec2>& route)
     {
         current_route = route;
         target = current_route.at(0);
-        current_route.erase(current_route.begin());
+        //current_route.erase(current_route.begin());
     }
     else
     {
