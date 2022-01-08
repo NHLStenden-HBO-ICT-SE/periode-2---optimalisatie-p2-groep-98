@@ -129,7 +129,7 @@ namespace Tmpl8
     Node::Node(vec2 coordinates_, Node* parent_)
     {
         parent = parent_;
-        coordinates = coordinates_;
+        coordinates / 16 = coordinates_;
         G = H = 0;
     }
 
@@ -191,7 +191,7 @@ namespace Tmpl8
                 }
             }
 
-            if (current->coordinates == target_) {
+            if (current->coordinates / 16 == target_) {
                 break;
             }
 
@@ -200,9 +200,11 @@ namespace Tmpl8
 
             for (uint i = 0; i < directions; ++i) {
                 vec2 newCoordinates(current->coordinates + direction[i]);
+                newCoordinates.x /= 16;
+                newCoordinates.y /= 16;
                 if (detectCollision(newCoordinates) || findNodeOnList(closedSet, newCoordinates))
                 {
-                    if (!is_accessible(newCoordinates.x, newCoordinates.y))
+                    if (!is_accessible(newCoordinates.y, newCoordinates.x))
                         addCollision(newCoordinates);
                     continue;
                 }
@@ -238,7 +240,7 @@ namespace Tmpl8
     Node* Terrain::findNodeOnList(NodeSet& nodes_, vec2 coordinates_)
     {
         for (auto node : nodes_) {
-            if (node->coordinates == coordinates_) {
+            if (node->coordinates / 16 == coordinates_) {
                 return node;
             }
         }
