@@ -4,6 +4,9 @@
 namespace fs = std::filesystem;
 namespace Tmpl8
 {
+    const int NUM_OF_THREADS = std::thread::hardware_concurrency() * 2;
+    ThreadPool* pool = new ThreadPool(NUM_OF_THREADS);
+
     Terrain::Terrain()
     {
         //Load in terrain sprites
@@ -146,29 +149,47 @@ namespace Tmpl8
 
         bool route_found = false;
         vector<TerrainTile*> current_route;
+        vector<future<void>> threads;
+
+
         while (!queue.empty() && !route_found)
         {
+
             current_route = queue.front();
             queue.pop();
             TerrainTile* current_tile = current_route.back();
+            int spliter = NUM_OF_THREADS;
 
-            //Check all exits, if target then done, else if unvisited push a new partial route
-            for each (TerrainTile * exit in current_tile->exits)
+            for (size_t x = 0; x < spliter; x++)
             {
-                if (exit->position_x == target_x && exit->position_y == target_y)
-                {
-                    current_route.push_back(exit);
-                    route_found = true;
-                    break;
-                }
-                else if (!exit->visited)
-                {
-                    exit->visited = true;
-                    visited.push_back(exit);
-                    queue.push(current_route);
-                    queue.back().push_back(exit);
-                }
+                threads.push_back(pool->enqueue([&]() {
+
+                    //Check all exits, if target then done, else if unvisited push a new partial route
+                    for (int i = 0; i < current_tile->exits.size() / spliter; i++)
+                    {
+                        TerrainTile* exit = current_tile->exits.at(i);
+                        if (exit->position_x == target_x && exit->position_y == target_y)
+                        {
+                            current_route.push_back(exit);
+                            route_found = true;
+                            break;
+                        }
+                        else if (!exit->visited)
+                        {
+                            exit->visited = true;
+                            visited.push_back(exit);
+                            queue.push(current_route);
+                            queue.back().push_back(exit);
+                        }
+
+                    }
+                    }));
+
             }
+        }
+
+        for (future<void>& th : threads) {
+            th.wait();
         }
 
         //Reset tiles
@@ -200,7 +221,7 @@ namespace Tmpl8
     {
         const size_t pos_x = position.x / sprite_size;
         const size_t pos_y = position.y / sprite_size;
-        
+
         switch (tiles.at(pos_y).at(pos_x).tile_type)
         {
         case TileType::GRASS:
@@ -224,9 +245,9 @@ namespace Tmpl8
         }
     }
 
-   
 
-    
+
+
 
     bool Terrain::is_accessible(int y, int x)
     {
@@ -245,9 +266,9 @@ namespace Tmpl8
 
 
 
-    
-    
 
-   
-    
+
+
+
+
 }
