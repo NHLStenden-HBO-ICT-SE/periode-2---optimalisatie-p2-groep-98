@@ -4,6 +4,7 @@
 namespace fs = std::filesystem;
 namespace Tmpl8
 {
+    std::mutex mtx;
     Terrain::Terrain()
     {
         //Load in terrain sprites
@@ -146,6 +147,7 @@ namespace Tmpl8
 
         bool route_found = false;
         vector<TerrainTile*> current_route;
+        mtx.lock();
         while (!queue.empty() && !route_found)
         {
             current_route = queue.front();
@@ -176,6 +178,7 @@ namespace Tmpl8
         {
             tile->visited = false;
         }
+        mtx.unlock();
 
         if (route_found)
         {

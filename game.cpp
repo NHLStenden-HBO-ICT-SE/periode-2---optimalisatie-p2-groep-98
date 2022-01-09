@@ -257,13 +257,37 @@ void Game::update(float deltaTime)
     //Initializing routes here so it gets counted for performance..
     if (frame_count == 0)
     {
+        std::vector<future<void>> route_threads;
+        route_threads.reserve(NUM_OF_THREADS);
+        int low = 0;
+        int high;
+
+        for (int i = 0; i < NUM_OF_THREADS; i++, low += tanks.size() / NUM_OF_THREADS)
+        {
+            high = low + tanks.size() / NUM_OF_THREADS;
+            if (i == NUM_OF_THREADS - 1)
+                high = tanks.size();
+            route_threads.push_back(pool->enqueue([&, low, high]() {
+                for (int j = low; j < high; j++)
+                {
+                    Tank& t = tanks.at(j);
+                    t.set_route(background_terrain.get_route(t, t.target));
+                }
+                }));
+        }
+        for (size_t i = 0; i < route_threads.size(); i++)
+        {
+            route_threads.at(i).wait();
+        }
         //background_terrain.initializeTilesNeighbours();
         grid->initializeTilesNeighbours();
+      
         for (Tank& t : active_tanks) {
             t.set_route(background_terrain.get_route(t, t.target));
         }
         for (Particle_beam& particle_beam : particle_beams) {
             grid->updateTile(&particle_beam);
+
 
         }
     }
@@ -284,18 +308,12 @@ void Game::update(float deltaTime)
 
 
     int collisions = 0;
-
-
-
-
     int TANK_COUNT = active_tanks.size();
-    
     int LIST_SIZE = TANK_COUNT / NUM_OF_THREADS;
-    
     int SPLIT_AMOUNT = NUM_OF_THREADS;
 
-    
-    
+
+
     vector<future<void>> threads;
 
     //COLLISION DETECTION
@@ -365,7 +383,7 @@ void Game::update(float deltaTime)
                         mlock.lock();
                         explosions.push_back(Explosion(&explosion, tank.position));
                         mlock.unlock();
-
+                      
                         if (tank.hit(rocket_hit_value))
                         {
                             mlock.lock();
@@ -384,15 +402,15 @@ void Game::update(float deltaTime)
             }
             }
             }));
-        
+
     }
-    
+
     for (future<void>& th : threads) {
         th.wait();
     }
 
-    
-    
+
+
 
     vector<vec2> points;
 
