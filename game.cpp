@@ -347,14 +347,33 @@ void Game::update(float deltaTime)
     //Initializing routes here so it gets counted for performance..
     if (frame_count == 0)
     {
+        std::vector<future<void>> route_threads;
+        route_threads.reserve(NUM_OF_THREADS);
+        int low = 0;
+        int high;
+
+        for (int i = 0; i < NUM_OF_THREADS; i++, low += tanks.size() / NUM_OF_THREADS)
+        {
+            high = low + tanks.size() / NUM_OF_THREADS;
+            if (i == NUM_OF_THREADS - 1)
+                high = tanks.size();
+            route_threads.push_back(pool->enqueue([&, low, high]() {
+                for (int j = low; j < high; j++)
+                {
+                    Tank& t = tanks.at(j);
+                    t.set_route(background_terrain.get_route(t, t.target));
+                }
+                }));
+        }
+        for (size_t i = 0; i < route_threads.size(); i++)
+        {
+            route_threads.at(i).wait();
+        }
         //background_terrain.initializeTilesNeighbours();
         grid->initializeTilesNeighbours();
-        for (Tank& t : tanks) {
-            t.set_route(background_terrain.get_route(t, t.target));
-        }
     }
 
-   
+
     //Check tank collision and nudge tanks away from each other    //Optimize, create a list with active tanks instead of checking in the tanks list
 
 
@@ -376,11 +395,11 @@ void Game::update(float deltaTime)
     int TANK_COUNT = tanks.size();
     int SPLIT_COUNT = 10;
     int LIST_SIZE = TANK_COUNT / SPLIT_COUNT;
-    
+
     int spliter = NUM_OF_THREADS;
 
-    
-    
+
+
     vector<future<void>> threads;
 
     for (size_t x = 0; x < spliter; x++)
@@ -421,7 +440,7 @@ void Game::update(float deltaTime)
                     if (t2->collider_type == Collider::ROCKET) {
                         Rocket* rocket = dynamic_cast<Rocket*>(t2);
                         if (tank.active && (tank.allignment != rocket->allignment) && rocket->intersects(tank.position, tank.collision_radius))
-                        {   
+                        {
                             mlock.lock();
                             explosions.push_back(Explosion(&explosion, tank.position));
                             mlock.unlock();
@@ -445,15 +464,15 @@ void Game::update(float deltaTime)
                 }
             }
             }));
-        
+
     }
-    
+
     for (future<void>& th : threads) {
         th.wait();
     }
 
-    
-    
+
+
 
     vector<vec2> points;
 
