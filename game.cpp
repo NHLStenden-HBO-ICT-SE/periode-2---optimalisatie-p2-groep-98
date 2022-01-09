@@ -281,10 +281,7 @@ void Game::update(float deltaTime)
         }
         //background_terrain.initializeTilesNeighbours();
         grid->initializeTilesNeighbours();
-      
-        for (Tank& t : active_tanks) {
-            t.set_route(background_terrain.get_route(t, t.target));
-        }
+     
         for (Particle_beam& particle_beam : particle_beams) {
             grid->updateTile(&particle_beam);
 
