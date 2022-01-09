@@ -18,7 +18,6 @@ namespace Tmpl8
         //TerrainTile *up, *down, *left, *right;
         vector<TerrainTile*> exits;
         bool visited = false;
-
         size_t position_x;
         size_t position_y;
 

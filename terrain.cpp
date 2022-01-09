@@ -1,6 +1,7 @@
 #include "terrain.h"
 #include "precomp.h"
 
+
 namespace fs = std::filesystem;
 namespace Tmpl8
 {
@@ -143,11 +144,10 @@ namespace Tmpl8
         queue.emplace();
         queue.back().push_back(&tiles.at(pos_y).at(pos_x));
 
-        std::vector<TerrainTile*> visited;
+        set<TerrainTile*> visited;
 
         bool route_found = false;
         vector<TerrainTile*> current_route;
-        mtx.lock();
         while (!queue.empty() && !route_found)
         {
             current_route = queue.front();
@@ -163,25 +163,22 @@ namespace Tmpl8
                     route_found = true;
                     break;
                 }
-                else if (!exit->visited)
+                else if (visited.find(exit) == visited.end())
+
                 {
-                    exit->visited = true;
-                    visited.push_back(exit);
+                    //exit->visited = true;
+                    visited.insert(exit);
                     queue.push(current_route);
                     queue.back().push_back(exit);
                 }
             }
         }
-
         //Reset tiles
-        for each (TerrainTile * tile in visited)
-        {
-            tile->visited = false;
-        }
-        mtx.unlock();
+
 
         if (route_found)
         {
+
             //Convert route to vec2 to prevent dangling pointers
             std::vector<vec2> route;
             for (TerrainTile* tile : current_route)
@@ -203,7 +200,7 @@ namespace Tmpl8
     {
         const size_t pos_x = position.x / sprite_size;
         const size_t pos_y = position.y / sprite_size;
-        
+
         switch (tiles.at(pos_y).at(pos_x).tile_type)
         {
         case TileType::GRASS:
@@ -227,9 +224,9 @@ namespace Tmpl8
         }
     }
 
-   
 
-    
+
+
 
     bool Terrain::is_accessible(int y, int x)
     {
@@ -248,9 +245,9 @@ namespace Tmpl8
 
 
 
-    
-    
 
-   
-    
+
+
+
+
 }

@@ -233,7 +233,6 @@ void convex_hull(vector<vec2> points)
     while (!S.empty())
     {
         vec2 p = S.top();
-        //cout << "(" << p.x << ", " << p.y << ")" << endl;
 
         points_on_hull.push_back(p);
         S.pop();
@@ -275,6 +274,7 @@ void Game::update(float deltaTime)
                 }
                 }));
         }
+
         for (size_t i = 0; i < route_threads.size(); i++)
         {
             route_threads.at(i).wait();
@@ -304,12 +304,9 @@ void Game::update(float deltaTime)
     
 
 
-    int collisions = 0;
-    int TANK_COUNT = active_tanks.size();
-    int LIST_SIZE = TANK_COUNT / NUM_OF_THREADS;
+    int LIST_SIZE = active_tanks.size() / NUM_OF_THREADS;
     int SPLIT_AMOUNT = NUM_OF_THREADS;
-
-
+    
 
     vector<future<void>> threads;
 
@@ -347,7 +344,9 @@ void Game::update(float deltaTime)
                         if (tank.hit(particle_beam.damage))
                         {
                             hitParticle = &particle_beam;
+                            mlock.lock();
                             smokes.push_back(Smoke(smoke, tank.position - vec2(0, 48)));
+                            mlock.unlock();
                         }
                     }
                 }
@@ -406,7 +405,7 @@ void Game::update(float deltaTime)
         th.wait();
     }
 
-
+    
 
 
     vector<vec2> points;
@@ -416,7 +415,6 @@ void Game::update(float deltaTime)
     points_on_hull.clear();
 
     //Calculate convex hull for 'rocket barrier'
-    auto begin = chrono::high_resolution_clock::now();
     //Update tanks
     for (Tank t : active_tanks) {
         if (!t.active) {
@@ -453,11 +451,7 @@ void Game::update(float deltaTime)
     for (vec2& point_on_hull : points_on_hull)
         forcefield_hull.push_back(point_on_hull);
 
-    auto end = chrono::high_resolution_clock::now();
-    auto dur = end - begin;
-    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(dur).count();
-    //cout << ms << endl;
-
+   
     //Update smoke plumes
     for (Smoke& smoke : smokes)
     {
@@ -473,7 +467,9 @@ void Game::update(float deltaTime)
     //Disable rockets if they collide with the "forcefield"
     //Hint: A point to convex hull intersection test might be better here? :) (Disable if outside)
 
-
+    
+   
+   
     for (Rocket& rocket : rockets)
     {
         if (rocket.active && frame_count > 1)
@@ -488,7 +484,7 @@ void Game::update(float deltaTime)
             }
         }
     }
-
+    
 
 
     //Remove exploded rockets with remove erase idiom
@@ -509,6 +505,7 @@ void Game::update(float deltaTime)
     }
 
     explosions.erase(std::remove_if(explosions.begin(), explosions.end(), [](const Explosion& explosion) { return explosion.done(); }), explosions.end());
+   
 }
 
 
@@ -521,6 +518,7 @@ void Game::update(float deltaTime)
 // -----------------------------------------------------------
 void Game::draw()
 {
+    
     // clear the graphics window
     screen->clear(0);
 
@@ -555,7 +553,7 @@ void Game::draw()
     {
         explosion.draw(screen);
     }
-
+    
     //Draw forcefield (mostly for debugging, its kinda ugly..)
     for (size_t i = 0; i < forcefield_hull.size(); i++)
     {
@@ -604,14 +602,9 @@ void Game::draw()
 
         }
     }
-    auto begin = chrono::high_resolution_clock::now();
 
     Sorting::health_merge_sort(blue_tanks, 0, blue_count -1);
     Sorting::health_merge_sort(red_tanks, 0, red_count-1);
-    auto end = chrono::high_resolution_clock::now();
-    auto dur = end - begin;
-    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(dur).count();
-    cout << "Merge sort time: " << ms << endl;
     
     draw_health_bars(blue_tanks, 0, blue_count);
 
@@ -622,7 +615,7 @@ void Game::draw()
     delete[] blue_tanks;
     delete[] red_tanks;
 
-
+    
 }
 
 
@@ -704,10 +697,17 @@ void Tmpl8::Game::measure_performance()
 // -----------------------------------------------------------
 void Game::tick(float deltaTime)
 {
+    
+    
     if (!lock_update)
     {
         update(deltaTime);
     }
+    auto begin2 = chrono::high_resolution_clock::now();
+    auto end2 = chrono::high_resolution_clock::now();
+    auto dur = end2 - begin2;
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(dur).count();
+    cout << "RO " << ms << endl;
     draw();
 
     measure_performance();
