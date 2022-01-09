@@ -51,10 +51,17 @@ const static float rocket_radius = 5.f;
 const int NUM_OF_THREADS = std::thread::hardware_concurrency() * 2;
 ThreadPool* pool = new ThreadPool(NUM_OF_THREADS);
 std::mutex mlock;
+vector<future<void>> threads;
 
-vector<Tank> inactive_tanks;
+/*
+//Counter
+auto begin2 = chrono::high_resolution_clock::now();
 
-
+auto end2 = chrono::high_resolution_clock::now();
+auto dur = end2 - begin2;
+auto ms = std::chrono::duration_cast<std::chrono::nanoseconds>(dur).count() / 10000;
+cout << "UPDATE " << ms << endl;
+*/
 
 
 
@@ -141,8 +148,16 @@ bool Tmpl8::Game::left_of_line(vec2 line_start, vec2 line_end, vec2 point)
 
 
 
-
-
+/// <summary>
+/// Waits for all futures in the array and then clears the array.
+/// </summary>
+/// <param name="threads"></param>
+void wait_and_clear(vector<future<void>> &threads) {
+    for (future<void>& t : threads) {
+        t.wait();
+    }
+    threads.clear();
+}
 
 // Find next to top in a stack
 vec2 next_to_top(stack<vec2>& S)
@@ -252,12 +267,13 @@ void convex_hull(vector<vec2> points)
 // -----------------------------------------------------------
 void Game::update(float deltaTime)
 {
+    threads.reserve(NUM_OF_THREADS);
+    grid->mlock = &mlock;
+
     //Calculate the route to the destination for each tank using BFS
     //Initializing routes here so it gets counted for performance..
     if (frame_count == 0)
     {
-        std::vector<future<void>> route_threads;
-        route_threads.reserve(NUM_OF_THREADS);
         int low = 0;
         int high;
 
@@ -266,7 +282,7 @@ void Game::update(float deltaTime)
             high = low + active_tanks.size() / NUM_OF_THREADS;
             if (i == NUM_OF_THREADS - 1)
                 high = active_tanks.size();
-            route_threads.push_back(pool->enqueue([&, low, high]() {
+            threads.push_back(pool->enqueue([&, low, high]() {
                 for (int j = low; j < high; j++)
                 {
                     Tank& t = active_tanks.at(j);
@@ -275,10 +291,9 @@ void Game::update(float deltaTime)
                 }));
         }
 
-        for (size_t i = 0; i < route_threads.size(); i++)
-        {
-            route_threads.at(i).wait();
-        }
+        
+        wait_and_clear(threads);
+        
         //background_terrain.initializeTilesNeighbours();
         grid->initializeTilesNeighbours();
      
@@ -290,35 +305,72 @@ void Game::update(float deltaTime)
     }
 
     grid->clearGrid();
+    
+  
+    
+        
 
     
 
-    vector<Tank> tt;
-    for (Tank& t : active_tanks) {
-        tt.push_back(t);
-        grid->updateTile(&t);
+    
+    int item_count = rockets.size() + active_tanks.size();
+    int rocket_threads = rockets.size() / item_count * NUM_OF_THREADS;
+    int tank_threads = NUM_OF_THREADS - rocket_threads;
+
+    if (rocket_threads != 0) {
+        for (size_t x = 0; x < rocket_threads; x++)
+        {
+            int startAt = 0;
+            startAt = x * active_tanks.size() / rocket_threads;
+
+            threads.push_back(pool->enqueue([&, startAt]() {
+                for (size_t i = 0; i < active_tanks.size() / rocket_threads; i++)
+                {
+                    Rocket& rocket= rockets.at(i + startAt);
+                    grid->updateTile(&rocket);
+                }
+                }));
+        }
+        
     }
-    for (Rocket& r : rockets) {
-        grid->updateTile(&r);
+    else {
+        for (Rocket& r : rockets) {
+            grid->updateTile(&r);
+        }
     }
     
+    for (size_t x = 0; x < tank_threads; x++)
+    {
+        int startAt = 0;
+        startAt = x * active_tanks.size() / tank_threads;
 
-
-    int LIST_SIZE = active_tanks.size() / NUM_OF_THREADS;
-    int SPLIT_AMOUNT = NUM_OF_THREADS;
+        threads.push_back(pool->enqueue([&, startAt]() {
+            for (size_t i = 0; i < active_tanks.size() / tank_threads; i++)
+            {
+                Tank& tank = active_tanks.at(i + startAt);
+                grid->updateTile(&tank);
+            }
+            }));
+    }
+    wait_and_clear(threads);
+    
     
 
-    vector<future<void>> threads;
+
+    
+    
+
+   
 
     //COLLISION DETECTION
     //Split the list into SPLIT_AMOUNT parts and give each part to a thread
-    for (size_t x = 0; x < SPLIT_AMOUNT; x++)
+    for (size_t x = 0; x < NUM_OF_THREADS; x++)
     {
         int startAt = 0;
-        startAt = x * active_tanks.size() / SPLIT_AMOUNT;
+        startAt = x * active_tanks.size() / NUM_OF_THREADS;
 
         threads.push_back(pool->enqueue([&, startAt]() {
-        for (size_t i = 0; i < active_tanks.size() / SPLIT_AMOUNT; i++)
+        for (size_t i = 0; i < active_tanks.size() / NUM_OF_THREADS; i++)
         {
             Tank& tank = active_tanks.at(i + startAt);
 
@@ -392,18 +444,13 @@ void Game::update(float deltaTime)
                     }
                 }
 
-
-
-
             }
             }
             }));
 
     }
 
-    for (future<void>& th : threads) {
-        th.wait();
-    }
+    wait_and_clear(threads);
 
     
 
@@ -423,7 +470,35 @@ void Game::update(float deltaTime)
     }
     active_tanks.erase(std::remove_if(active_tanks.begin(), active_tanks.end(), [](const Tank& tank) { return !tank.active; }), active_tanks.end());
 
+    //for (size_t x = 0; x < NUM_OF_THREADS; x++)
+    //{
+    //    int startAt = 0;
+    //    startAt = x * active_tanks.size() / NUM_OF_THREADS;
 
+    //    threads.push_back(pool->enqueue([&, startAt]() {
+    //        for (size_t i = 0; i < active_tanks.size() / NUM_OF_THREADS; i++)
+    //        {
+    //            Tank& tank = active_tanks.at(i + startAt);
+    //            tank.tick(background_terrain);
+
+    //            //Shoot at closest target if reloaded
+
+    //            if (tank.rocket_reloaded())
+    //            {
+    //                Tank& target = find_closest_enemy(tank);
+    //                mlock.lock();
+    //                rockets.push_back(Rocket(tank.position, (target.get_position() - tank.position).normalized() * 3, rocket_radius, tank.allignment, ((tank.allignment == RED) ? &rocket_red : &rocket_blue)));
+    //                mlock.unlock();
+    //                tank.reload_rocket();
+    //            }
+    //            //Pushes points for use in convex hull
+    //            mlock.lock();
+    //            points.push_back({ tank.get_position().x, tank.get_position().y });
+    //            mlock.unlock();
+    //        }
+    //        }));
+    //}
+    //wait_and_clear(threads);
     for (Tank& tank : active_tanks)
     {
                    
@@ -431,6 +506,7 @@ void Game::update(float deltaTime)
         tank.tick(background_terrain);
 
         //Shoot at closest target if reloaded
+
         if (tank.rocket_reloaded())
         {
             Tank& target = find_closest_enemy(tank);
@@ -468,7 +544,7 @@ void Game::update(float deltaTime)
     //Hint: A point to convex hull intersection test might be better here? :) (Disable if outside)
 
     
-   
+    
    
     for (Rocket& rocket : rockets)
     {
@@ -485,7 +561,6 @@ void Game::update(float deltaTime)
         }
     }
     
-
 
     //Remove exploded rockets with remove erase idiom
     rockets.erase(std::remove_if(rockets.begin(), rockets.end(), [](const Rocket& rocket) { return !rocket.active; }), rockets.end());
@@ -518,6 +593,50 @@ void Game::update(float deltaTime)
 // -----------------------------------------------------------
 void Game::draw()
 {
+    //Preparing arrays for health bars
+    size_t blue_count = 0;
+    size_t red_count = 0;
+    for (Tank t : active_tanks) {
+        if (!t.active) continue;
+        if (t.allignment == BLUE) {
+            blue_count++;
+        }
+        else {
+            red_count++;
+        }
+    }
+
+    int* blue_tanks = new int[blue_count];
+    int* red_tanks = new int[red_count];
+    size_t red = 0;
+    size_t blue = 0;
+
+    for (int i = 0; i < active_tanks.size(); i++) {
+        Tank current_tank = active_tanks.at(i);
+
+        if (current_tank.allignment == BLUE) {
+            //sorted_tanks_blue.emplace_back(current_tank);
+            blue_tanks[blue] = int(current_tank.health);
+            blue++;
+        }
+        else {
+            //sorted_tanks_red.emplace_back(current_tank);
+            red_tanks[red] = int(current_tank.health);
+            red++;
+
+        }
+    }
+    //Start a thread to sort the health values.
+    auto sort = pool->enqueue([&]() {
+        
+
+        Sorting::health_merge_sort(blue_tanks, 0, blue_count - 1);
+        Sorting::health_merge_sort(red_tanks, 0, red_count - 1);
+
+        return (blue_tanks, red_tanks);
+        });
+
+   
     
     // clear the graphics window
     screen->clear(0);
@@ -526,6 +645,7 @@ void Game::draw()
     background_terrain.draw(screen);
 
     //Draw sprites
+    
     for (Tank t : active_tanks) {
         t.draw(screen);
     }
@@ -554,58 +674,20 @@ void Game::draw()
         explosion.draw(screen);
     }
     
+    int force_field_size = forcefield_hull.size();
     //Draw forcefield (mostly for debugging, its kinda ugly..)
     for (size_t i = 0; i < forcefield_hull.size(); i++)
     {
         vec2 line_start = forcefield_hull.at(i);
-        vec2 line_end = forcefield_hull.at((i + 1) % forcefield_hull.size());
+        vec2 line_end = forcefield_hull.at((i + 1) % force_field_size);
         line_start.x += HEALTHBAR_OFFSET;
         line_end.x += HEALTHBAR_OFFSET;
         screen->line(line_start, line_end, 0x0000ff);
     }
 
-    //Draw sorted health bars
-
-
-
-    size_t blue_count = 0;
-    size_t red_count = 0;
-    for (Tank t : active_tanks) {
-        if (!t.active) continue;
-        if (t.allignment == BLUE) {
-            blue_count++;
-        }
-        else {
-            red_count++;
-        }
-    }
-
-    int* blue_tanks = new int[blue_count];
-    int* red_tanks = new int[red_count];
-    
-        
-    size_t red = 0;
-    size_t blue = 0;
-
-    for (int i = 0; i < active_tanks.size(); i++) {
-        Tank current_tank = active_tanks.at(i);
-
-        if (current_tank.allignment == BLUE) {
-            //sorted_tanks_blue.emplace_back(current_tank);
-            blue_tanks[blue] = int(current_tank.health);
-            blue++;
-        }
-        else {
-            //sorted_tanks_red.emplace_back(current_tank);
-            red_tanks[red] = int(current_tank.health);
-            red++;
-
-        }
-    }
-
-    Sorting::health_merge_sort(blue_tanks, 0, blue_count -1);
-    Sorting::health_merge_sort(red_tanks, 0, red_count-1);
-    
+    //Draw sorted health 
+   
+    sort.wait();
     draw_health_bars(blue_tanks, 0, blue_count);
 
     draw_health_bars(red_tanks, 1, red_count);
@@ -703,11 +785,7 @@ void Game::tick(float deltaTime)
     {
         update(deltaTime);
     }
-    auto begin2 = chrono::high_resolution_clock::now();
-    auto end2 = chrono::high_resolution_clock::now();
-    auto dur = end2 - begin2;
-    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(dur).count();
-    cout << "RO " << ms << endl;
+    
     draw();
 
     measure_performance();

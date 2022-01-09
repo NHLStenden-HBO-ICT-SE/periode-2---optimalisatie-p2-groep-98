@@ -61,18 +61,19 @@ void CollisionGrid::updateTile(Collidable* col)
         vec2 ro = vec2(beam->max_position.x, beam->min_position.y);
         vec2 rb = beam->max_position;
 
+
         //Get the tile indexes for each corner
         vec2 p_lo = getTileIndex(lo);
         vec2 p_lb = getTileIndex(lb);
         vec2 p_ro = getTileIndex(ro);
         vec2 p_rb = getTileIndex(rb);
-        int cou = 0;
         
         //Get all the tiles in between the corners
         for (int x = p_lo.x; x < p_ro.x + 1; x++) {
             for (int y = p_lo.y; y < p_lb.y; y++) {
+                mlock->lock();
                 getTile(x, y)->addCollidable(col);
-                cou++;
+                mlock->unlock();
             }
         }
         return;
@@ -81,8 +82,9 @@ void CollisionGrid::updateTile(Collidable* col)
 
     vec2& pos = col->col_get_current_position();
     CollisionTile* tile = getTileFor(pos);
-
+    mlock->lock();
     tile->objects.push_back(col);
+    mlock->unlock();
 }
 
 

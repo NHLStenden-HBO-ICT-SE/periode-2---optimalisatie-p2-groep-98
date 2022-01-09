@@ -14,7 +14,7 @@ public:
     /// </summary>
     /// <returns>All near collidables</returns>
     vector<Collidable*> getPossibleCollidables();
-
+    
     vector<Collidable*> objects;
     vector<Collidable*> beams;
     /// <summary>
@@ -33,6 +33,7 @@ public:
 class CollisionGrid
 {
 public:
+
     /// <summary>
     /// Calculate all neighbour tiles. Should only be run once.
     /// Needs the tiles array to be filled.
@@ -60,6 +61,10 @@ public:
     /// Clear all objects from the grid except for the particle beams.
     /// </summary>
     void clearGrid();
+    /// <summary>
+    /// Lock for multithreading
+    /// </summary>
+    mutex* mlock;
 
 
 private:
