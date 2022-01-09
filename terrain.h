@@ -23,10 +23,10 @@ namespace Tmpl8
         size_t position_y;
 
         TileType tile_type;
-        
-        
+
+
     private:
-        
+
 
     };
 
@@ -43,7 +43,7 @@ namespace Tmpl8
         vector<vec2> get_route(const Tank& tank, const vec2& target);
 
         float get_speed_modifier(const vec2& position) const;
-        
+
 
     private:
 
@@ -64,7 +64,7 @@ namespace Tmpl8
         std::unique_ptr<Sprite> tile_rocks;
         std::unique_ptr<Sprite> tile_mountains;
         std::unique_ptr<Sprite> tile_water;
-        
+
         std::array<std::array<TerrainTile, terrain_width>, terrain_height> tiles;
     };
 }

@@ -151,7 +151,6 @@ namespace Tmpl8
         vector<TerrainTile*> current_route;
         vector<future<void>> threads;
 
-
         while (!queue.empty() && !route_found)
         {
 
@@ -184,10 +183,8 @@ namespace Tmpl8
 
                     }
                     }));
-
             }
         }
-
         for (future<void>& th : threads) {
             th.wait();
         }
