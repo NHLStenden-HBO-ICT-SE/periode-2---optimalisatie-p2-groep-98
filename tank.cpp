@@ -89,9 +89,8 @@ void Tank::tick(Terrain& terrain)
     }
 }
 
-vec2 Tank::getCurrentPosition()
+vec2 Tank::col_get_current_position()
 {
-    //cout << "Position " << get_position().x << " : " << get_position().y << endl;
     return get_position();
 }
 

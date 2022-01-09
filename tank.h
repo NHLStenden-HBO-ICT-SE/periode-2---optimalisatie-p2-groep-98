@@ -26,9 +26,9 @@ class Tank : public Collidable
     bool rocket_reloaded() const { return reloaded; };
 
 
-    float getCollisionRadius() { return get_collision_radius(); };
+    float col_get_collision_radius() { return get_collision_radius(); };
 
-    vec2 getCurrentPosition();
+    vec2 col_get_current_position();
 
 
     void set_route(const std::vector<vec2>& route);

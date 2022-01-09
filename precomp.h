@@ -92,6 +92,7 @@ using namespace Tmpl8;
 #include "smoke.h"
 #include "explosion.h"
 #include "particle_beam.h"
+#include "sorting.h"
 
 #include "game.h"
 

@@ -28,7 +28,7 @@ void Rocket::draw(Surface* screen)
 }
 
 
-vec2 Rocket::getCurrentPosition()
+vec2 Rocket::col_get_current_position()
 {
     return this->position;
 
