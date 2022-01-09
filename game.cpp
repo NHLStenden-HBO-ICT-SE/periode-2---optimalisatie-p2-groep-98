@@ -262,15 +262,15 @@ void Game::update(float deltaTime)
         int low = 0;
         int high;
 
-        for (int i = 0; i < NUM_OF_THREADS; i++, low += tanks.size() / NUM_OF_THREADS)
+        for (int i = 0; i < NUM_OF_THREADS; i++, low += active_tanks.size() / NUM_OF_THREADS)
         {
-            high = low + tanks.size() / NUM_OF_THREADS;
+            high = low + active_tanks.size() / NUM_OF_THREADS;
             if (i == NUM_OF_THREADS - 1)
-                high = tanks.size();
+                high = active_tanks.size();
             route_threads.push_back(pool->enqueue([&, low, high]() {
                 for (int j = low; j < high; j++)
                 {
-                    Tank& t = tanks.at(j);
+                    Tank& t = active_tanks.at(j);
                     t.set_route(background_terrain.get_route(t, t.target));
                 }
                 }));
