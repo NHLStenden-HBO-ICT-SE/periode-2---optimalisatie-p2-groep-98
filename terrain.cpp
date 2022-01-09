@@ -138,52 +138,56 @@ namespace Tmpl8
         const size_t target_y = target.y / sprite_size;
 
         //Init queue with start tile
-        std::queue<vector<TerrainTile*>> queue;
+        std::queue<vector<TerrainTile>> queue;
         queue.emplace();
-        queue.back().push_back(&tiles.at(pos_y).at(pos_x));
+        queue.back().push_back(tiles.at(pos_y).at(pos_x));
 
-        std::vector<TerrainTile*> visited;
+        std::vector<TerrainTile> visited;
 
         bool route_found = false;
-        vector<TerrainTile*> current_route;
+        vector<TerrainTile> current_route;
         while (!queue.empty() && !route_found)
         {
             current_route = queue.front();
             queue.pop();
-            TerrainTile* current_tile = current_route.back();
+            TerrainTile current_tile = current_route.back();
 
-            //Check all exits, if target then done, else if unvisited push a new partial route
-            for each (TerrainTile * exit in current_tile->exits)
+            //Check all exits, if target then done, else if unvisited push a new partial route.
+            vector<TerrainTile*> exits = current_tile.exits;
+
+            for each (TerrainTile* exit in exits)
             {
-                if (exit->position_x == target_x && exit->position_y == target_y)
+                TerrainTile exit2 = *exit;
+                if (exit2.position_x == target_x && exit2.position_y == target_y)
                 {
-                    current_route.push_back(exit);
+                    current_route.push_back(exit2);
                     route_found = true;
                     break;
                 }
-                else if (!exit->visited)
+                else if (!exit2.visited)
                 {
-                    exit->visited = true;
-                    visited.push_back(exit);
+                    exit2.visited = true;
+                    visited.push_back(exit2);
                     queue.push(current_route);
-                    queue.back().push_back(exit);
+                    queue.back().push_back(exit2);
                 }
             }
+            delete[] &exits;
         }
 
         //Reset tiles
-        for each (TerrainTile * tile in visited)
+        for each (TerrainTile tile in visited)
         {
-            tile->visited = false;
+            tile.visited = false;
         }
 
         if (route_found)
         {
             //Convert route to vec2 to prevent dangling pointers
             std::vector<vec2> route;
-            for (TerrainTile* tile : current_route)
+            for (TerrainTile tile : current_route)
             {
-                route.push_back(vec2((float)tile->position_x * sprite_size, (float)tile->position_y * sprite_size));
+                route.push_back(vec2((float)tile.position_x * sprite_size, (float)tile.position_y * sprite_size));
             }
 
             return route;
@@ -192,6 +196,7 @@ namespace Tmpl8
         {
             return  std::vector<vec2>();
         }
+        delete[] &queue;
 
     }
 

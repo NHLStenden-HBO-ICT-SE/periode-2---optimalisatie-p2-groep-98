@@ -259,8 +259,29 @@ void Game::update(float deltaTime)
     {
         //background_terrain.initializeTilesNeighbours();
         grid->initializeTilesNeighbours();
-        for (Tank& t : active_tanks) {
-            t.set_route(background_terrain.get_route(t, t.target));
+        int TANK_COUNT = active_tanks.size();
+
+        int LIST_SIZE = TANK_COUNT / NUM_OF_THREADS;
+
+        int SPLIT_AMOUNT = NUM_OF_THREADS;
+
+
+
+        vector<future<void>> threads;
+
+        //Split the list into SPLIT_AMOUNT parts and give each part to a thread
+        for (size_t x = 0; x < SPLIT_AMOUNT; x++)
+        {
+            int startAt = 0;
+            startAt = x * active_tanks.size() / SPLIT_AMOUNT;
+
+            threads.push_back(pool->enqueue([&, startAt]() {
+                for (size_t i = 0; i < active_tanks.size() / SPLIT_AMOUNT; i++)
+                {
+                    Tank& tank = active_tanks.at(i + startAt);
+                    tank.set_route(background_terrain.get_route(tank, tank.target));
+                }
+            }));
         }
         for (Particle_beam& particle_beam : particle_beams) {
             grid->updateTile(&particle_beam);
