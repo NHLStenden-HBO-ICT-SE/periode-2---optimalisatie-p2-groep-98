@@ -69,7 +69,7 @@ void CollisionGrid::updateTile(Collidable* col)
     }
 
 
-    vec2& pos = col->getCurrentPosition();
+    vec2& pos = col->col_get_current_position();
     CollisionTile* tile = getTileFor(pos);
 
     tile->objects.push_back(col);

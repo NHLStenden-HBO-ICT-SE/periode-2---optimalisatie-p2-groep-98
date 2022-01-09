@@ -8,8 +8,8 @@ class Particle_beam : public Collidable
     Particle_beam();
     Particle_beam(vec2 min, vec2 max, Sprite* particle_beam_sprite, int damage);
 
-    float getCollisionRadius() { return -1; };
-    vec2 getCurrentPosition() { return -1; };
+    float col_get_collision_radius() { return -1; };
+    vec2 col_get_current_position() { return -1; };
     void tick(vector<Tank>& tanks);
     void draw(Surface* screen);
 

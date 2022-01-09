@@ -14,9 +14,9 @@ class Rocket : public Collidable
 
     bool intersects(vec2 position_other, float radius_other) const;
 
-    float getCollisionRadius() { return this->collision_radius; };
+    float col_get_collision_radius() { return this->collision_radius; };
 
-    vec2 getCurrentPosition();
+    vec2 col_get_current_position();
     vec2 position;
     vec2 speed;
 

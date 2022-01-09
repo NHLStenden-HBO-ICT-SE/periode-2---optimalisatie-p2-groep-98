@@ -46,7 +46,7 @@ namespace Tmpl8
         Surface* screen;
 
 
-        vector<Tank> tanks;
+        vector<Tank> active_tanks;
         vector<Rocket> rockets;
         vector<Smoke> smokes;
         vector<Explosion> explosions;
