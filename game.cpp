@@ -551,7 +551,13 @@ void Game::update(float deltaTime)
     {
         rocket.tick();
     }
+    //Update particle beams
+    for (Particle_beam& particle_beam : particle_beams)
+    {
+        particle_beam.tick(active_tanks);
 
+        
+    }
     //Disable rockets if they collide with the "forcefield"
     //Hint: A point to convex hull intersection test might be better here? :) (Disable if outside)
 
@@ -578,13 +584,7 @@ void Game::update(float deltaTime)
     //Remove exploded rockets with remove erase idiom
     rockets.erase(std::remove_if(rockets.begin(), rockets.end(), [](const Rocket& rocket) { return !rocket.active; }), rockets.end());
 
-    //Update particle beams
-    for (Particle_beam& particle_beam : particle_beams)
-    {
-        particle_beam.tick(active_tanks);
-
-        
-    }
+    
 
     //Update explosion sprites and remove when done with remove erase idiom
     for (Explosion& explosion : explosions)
