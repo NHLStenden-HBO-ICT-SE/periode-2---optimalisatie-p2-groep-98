@@ -460,53 +460,33 @@ void Game::update(float deltaTime)
     //Calculate "forcefield" around active tanks, clears forcefield here
     forcefield_hull.clear();
     points_on_hull.clear();
-
+    for (vec2& point_on_hull : points_on_hull) {
+        forcefield_hull.push_back(point_on_hull);
+    }
     //Calculate convex hull for 'rocket barrier'
     //Update tanks
-    for (Tank t : active_tanks) {
-        if (!t.active) {
-            inactive_tanks.push_back(t);
+    for (Tank& tank : active_tanks) {
+        if (tank.active) {
+            //Move tanks according to speed and nudges (see above) also reload
+            tank.tick(background_terrain);
+            //Pushes points for use in convex hull
+            points.push_back({ tank.get_position().x, tank.get_position().y });
+        }
+        else {
+            inactive_tanks.push_back(tank);
+
         }
     }
+    //Remove inactive tanks from active list
     active_tanks.erase(std::remove_if(active_tanks.begin(), active_tanks.end(), [](const Tank& tank) { return !tank.active; }), active_tanks.end());
 
-    //for (size_t x = 0; x < NUM_OF_THREADS; x++)
-    //{
-    //    int startAt = 0;
-    //    startAt = x * active_tanks.size() / NUM_OF_THREADS;
-
-    //    threads.push_back(pool->enqueue([&, startAt]() {
-    //        for (size_t i = 0; i < active_tanks.size() / NUM_OF_THREADS; i++)
-    //        {
-    //            Tank& tank = active_tanks.at(i + startAt);
-    //            tank.tick(background_terrain);
-
-    //            //Shoot at closest target if reloaded
-
-    //            if (tank.rocket_reloaded())
-    //            {
-    //                Tank& target = find_closest_enemy(tank);
-    //                mlock.lock();
-    //                rockets.push_back(Rocket(tank.position, (target.get_position() - tank.position).normalized() * 3, rocket_radius, tank.allignment, ((tank.allignment == RED) ? &rocket_red : &rocket_blue)));
-    //                mlock.unlock();
-    //                tank.reload_rocket();
-    //            }
-    //            //Pushes points for use in convex hull
-    //            mlock.lock();
-    //            points.push_back({ tank.get_position().x, tank.get_position().y });
-    //            mlock.unlock();
-    //        }
-    //        }));
-    //}
-    //wait_and_clear(threads);
+    auto hull_prepare = pool->enqueue([&]() {
+        //Calculates points_on_hull
+        convex_hull(points);
+        });
     for (Tank& tank : active_tanks)
     {
-                   
-        //Move tanks according to speed and nudges (see above) also reload
-        tank.tick(background_terrain);
-
         //Shoot at closest target if reloaded
-
         if (tank.rocket_reloaded())
         {
             Tank& target = find_closest_enemy(tank);
@@ -515,17 +495,12 @@ void Game::update(float deltaTime)
 
             tank.reload_rocket();
         }
-        //Pushes points for use in convex hull
-        points.push_back({ tank.get_position().x, tank.get_position().y });
+        
     }
 
    
 
-    //Calculates points_on_hull
-    convex_hull(points);
-    //Draws all points of the forcefield
-    for (vec2& point_on_hull : points_on_hull)
-        forcefield_hull.push_back(point_on_hull);
+    
 
    
     //Update smoke plumes
@@ -545,7 +520,7 @@ void Game::update(float deltaTime)
 
     
     
-   
+    hull_prepare.wait();
     for (Rocket& rocket : rockets)
     {
         if (rocket.active && frame_count > 1)
