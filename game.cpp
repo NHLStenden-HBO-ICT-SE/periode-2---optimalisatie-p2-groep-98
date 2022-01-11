@@ -323,20 +323,16 @@ void Game::update(float deltaTime)
         grid->initializeTilesNeighbours();
      
         for (Particle_beam& particle_beam : particle_beams) {
-            grid->updateTile(&particle_beam);
+            grid->update_tile(&particle_beam);
 
 
         }
     }
 
+   
     grid->clearGrid();
     
   
-    
-        
-
-    
-
     
     int item_count = rockets.size() + active_tanks.size();
     int rocket_threads = rockets.size() / item_count * NUM_OF_THREADS;
@@ -353,7 +349,7 @@ void Game::update(float deltaTime)
             for (size_t i = 0; i < active_tanks.size() / tank_threads; i++)
             {
                 Tank& tank = active_tanks.at(i + startAt);
-                grid->updateTile(&tank);
+                grid->update_tile(&tank);
             }
             }));
     }
@@ -368,7 +364,7 @@ void Game::update(float deltaTime)
                 for (size_t i = 0; i < active_tanks.size() / rocket_threads; i++)
                 {
                     Rocket& rocket = rockets.at(i + startAt);
-                    grid->updateTile(&rocket);
+                    grid->update_tile(&rocket);
                 }
                 }));
         }
@@ -376,7 +372,7 @@ void Game::update(float deltaTime)
     }
     else {
         for (Rocket& r : rockets) {
-            grid->updateTile(&r);
+            grid->update_tile(&r);
         }
     }
     wait_and_clear(threads);
@@ -402,8 +398,9 @@ void Game::update(float deltaTime)
             Tank& tank = active_tanks.at(i + startAt);
 
                            
-                
+            
             CollisionTile* tank_tile = grid->getTileFor(tank.get_position());
+
             //Get a list of all collidables near the tile
             vector<Collidable*> possible_collisions = tank_tile->getPossibleCollidables();
             for (Collidable* other : possible_collisions) {
@@ -430,26 +427,27 @@ void Game::update(float deltaTime)
                     }
                 }
 
-                //Check if "other" collides with the tank
-                vec2 dir = tank.get_position() - other->col_get_current_position();
-                float dir_squared_len = dir.sqr_length();
+               
 
-                float col_squared_len = (tank.get_collision_radius() + other->col_get_collision_radius());
-                col_squared_len *= col_squared_len;
-
-                //No collision > continue in for loop
-                if (dir_squared_len > col_squared_len)
-                {
-                    continue;
-
-                }
+                
 
                 //Tank collision
                 if (other->collider_type == Collider::TANK) {
-                    tank.push(dir.normalized(), 1.f);
+                    //Check if "other" collides with the tank
+                    vec2 dir = tank.get_position() - other->col_get_current_position();
+                    float dir_squared_len = dir.sqr_length();
+
+                    float col_squared_len = (tank.get_collision_radius() + other->col_get_collision_radius());
+                    col_squared_len *= col_squared_len;
+                    //No collision > continue in for loop
+                    if (dir_squared_len < col_squared_len)
+                    {
+                        tank.push(dir.normalized(), 1.f);
+                        continue;
+                    }
                 }
 
-
+                
                 //Rocket collision
                 if (other->collider_type == Collider::ROCKET) {
                     Rocket* rocket = dynamic_cast<Rocket*>(other);
@@ -479,6 +477,7 @@ void Game::update(float deltaTime)
 
     wait_and_clear(threads);
 
+    
     
 
 

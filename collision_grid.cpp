@@ -49,7 +49,7 @@ CollisionTile* CollisionGrid::getTile(int x, int y)
         return tile;
 }
 
-void CollisionGrid::updateTile(Collidable* col)
+void CollisionGrid::update_tile(Collidable* col)
 {
     //If the collidable is a particle beam, generate all the tiles it covers
     if (col->collider_type == Collider::BEAM) {
@@ -139,9 +139,10 @@ vector<Collidable*> CollisionTile::getPossibleCollidables()
 
     
     for (CollisionTile* tile : this->neighbours) {
-    results.insert(results.end(), tile->objects.begin(), tile->objects.end());
+        results.insert(results.end(), tile->objects.begin(), tile->objects.end());
     }
     results.insert(results.end(), this->beams.begin(), this->beams.end());
+
     return results;
 }
 

@@ -50,7 +50,7 @@ public:
     /// Put the collidable in the correct tile according to its position.
     /// </summary>
     /// <param name="col">Collidable to add</param>
-    void updateTile(Collidable* col);
+    void update_tile(Collidable* col);
     /// <summary>
     /// Get a tile from a world-position.
     /// </summary>
@@ -75,8 +75,8 @@ private:
     //Original width: 80
     //Original height: 45
     //Scale them proportionally, width + 16 and height + 9
-    static constexpr size_t width = 128;
-    static constexpr size_t height = 72;
+    static constexpr size_t width = 80;
+    static constexpr size_t height = 45;
 
     //Divider used to find tile index by world position.
     static constexpr size_t divider = 1280/width;
