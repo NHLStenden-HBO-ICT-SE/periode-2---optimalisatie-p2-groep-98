@@ -1,6 +1,8 @@
-# Optimalisatie_Project
+# Optimalisatie Project
+#### Groep 98
 
-## interessante Punten Optimalisatie
+
+## Interessante Punten Optimalisatie
 
 #### Collision systeem
 We hebben de objecten zoals Tank, Rocket, Particle laten erven van een nieuwe class: Collidable.
