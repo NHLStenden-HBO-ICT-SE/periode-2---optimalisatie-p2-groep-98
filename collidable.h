@@ -13,7 +13,6 @@ public:
 	/// Used to get the type of object and cast it.
 	/// </summary>
 	Collider collider_type;
-
 	virtual vec2 col_get_current_position() = 0;
 	virtual float col_get_collision_radius() = 0;
 };

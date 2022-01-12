@@ -45,6 +45,9 @@
   <PropertyGroup Condition="'$(Configuration)'=='Debug'">
     <TargetName>$(ProjectName)_debug</TargetName>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
       <AdditionalIncludeDirectories>lib\glew-2.1.0\include;lib\SDL2-2.0.10\include;lib\FreeImage\include</AdditionalIncludeDirectories>
@@ -98,7 +101,7 @@
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
       <FloatingPointModel>Fast</FloatingPointModel>
-      <DebugInformationFormat>None</DebugInformationFormat>
+      <DebugInformationFormat>OldStyle</DebugInformationFormat>
       <BrowseInformation>
       </BrowseInformation>
     </ClCompile>

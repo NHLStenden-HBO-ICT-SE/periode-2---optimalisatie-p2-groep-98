@@ -122,6 +122,31 @@ Tank& Game::find_closest_enemy(Tank& current_tank)
 {
     float closest_distance = numeric_limits<float>::infinity();
     int closest_index = 0;
+
+    //Check the tiles around for enemy tanks.
+    CollisionTile* tile = grid->getTileFor(current_tank.col_get_current_position());
+    vector<CollisionTile*> near_tiles;
+    near_tiles.insert(near_tiles.end(), tile->neighbours.begin(), tile->neighbours.end());
+    near_tiles.push_back(tile);
+    Tank* closest = nullptr;
+    for (CollisionTile* t : near_tiles) {
+        for (Collidable* c : t->objects) {
+            if (c->collider_type != Collider::TANK) continue;
+            Tank* tank = dynamic_cast<Tank*>(c);
+            if (tank->allignment != current_tank.allignment) {
+                float sqr_dist = fabsf((tank->col_get_current_position() - current_tank.get_position()).sqr_length());
+                if (sqr_dist < closest_distance)
+                {
+                    closest_distance = sqr_dist;
+                    closest = tank;
+                }
+            }
+        }
+    }
+    if (closest) {
+        return *closest;
+    }
+    //If there is no tank in a neighbour tile, check all other
     for (int i = 0; i < active_tanks.size(); i++)
     {
         if (active_tanks.at(i).allignment != current_tank.allignment && active_tanks.at(i).active)
@@ -295,39 +320,22 @@ void Game::update(float deltaTime)
         grid->initializeTilesNeighbours();
      
         for (Particle_beam& particle_beam : particle_beams) {
-            grid->updateTile(&particle_beam);
+            grid->update_tile(&particle_beam);
 
 
         }
     }
 
+   
     grid->clearGrid();
+    
+  
     
     int item_count = rockets.size() + active_tanks.size();
     int rocket_threads = rockets.size() / item_count * NUM_OF_THREADS;
     int tank_threads = NUM_OF_THREADS - rocket_threads;
 
-    if (rocket_threads != 0) {
-        for (size_t x = 0; x < rocket_threads; x++)
-        {
-            int startAt = 0;
-            startAt = x * active_tanks.size() / rocket_threads;
-
-            threads.push_back(pool->enqueue([&, startAt]() {
-                for (size_t i = 0; i < active_tanks.size() / rocket_threads; i++)
-                {
-                    Rocket& rocket= rockets.at(i + startAt);
-                    grid->updateTile(&rocket);
-                }
-                }));
-        }
-        
-    }
-    else {
-        for (Rocket& r : rockets) {
-            grid->updateTile(&r);
-        }
-    }
+    
     
     for (size_t x = 0; x < tank_threads; x++)
     {
@@ -338,9 +346,31 @@ void Game::update(float deltaTime)
             for (size_t i = 0; i < active_tanks.size() / tank_threads; i++)
             {
                 Tank& tank = active_tanks.at(i + startAt);
-                grid->updateTile(&tank);
+                grid->update_tile(&tank);
             }
             }));
+    }
+    //If the rocket count is big enough, multithread it.
+    if (rocket_threads != 0) {
+        for (size_t x = 0; x < rocket_threads; x++)
+        {
+            int startAt = 0;
+            startAt = x * active_tanks.size() / rocket_threads;
+
+            threads.push_back(pool->enqueue([&, startAt]() {
+                for (size_t i = 0; i < active_tanks.size() / rocket_threads; i++)
+                {
+                    Rocket& rocket = rockets.at(i + startAt);
+                    grid->update_tile(&rocket);
+                }
+                }));
+        }
+
+    }
+    else {
+        for (Rocket& r : rockets) {
+            grid->update_tile(&r);
+        }
     }
     wait_and_clear(threads);
     
@@ -359,8 +389,9 @@ void Game::update(float deltaTime)
             Tank& tank = active_tanks.at(i + startAt);
 
                            
-                
+            
             CollisionTile* tank_tile = grid->getTileFor(tank.get_position());
+
             //Get a list of all collidables near the tile
             vector<Collidable*> possible_collisions = tank_tile->getPossibleCollidables();
             for (Collidable* other : possible_collisions) {
@@ -372,14 +403,14 @@ void Game::update(float deltaTime)
 
                 //Since the beam does not have a position and round collision field, check it first.
                 if (other->collider_type == Collider::BEAM && hitParticle != other) {
-                    Particle_beam particle_beam = *dynamic_cast<Particle_beam*>(other);
+                    Particle_beam* particle_beam = dynamic_cast<Particle_beam*>(other);
                     vec2 pos = tank.col_get_current_position();
                     float radius = tank.col_get_collision_radius();
-                    if (tank.active && particle_beam.rectangle.intersects_circle(pos, radius) )
+                    if (tank.active && particle_beam->rectangle.intersects_circle(pos, radius) )
                     {
-                        if (tank.hit(particle_beam.damage))
+                        if (tank.hit(particle_beam->damage))
                         {
-                            hitParticle = &particle_beam;
+                            hitParticle = particle_beam;
                             mlock.lock();
                             smokes.push_back(Smoke(smoke, tank.position - vec2(0, 48)));
                             mlock.unlock();
@@ -387,26 +418,27 @@ void Game::update(float deltaTime)
                     }
                 }
 
-                //Check if "other" collides with the tank
-                vec2 dir = tank.get_position() - other->col_get_current_position();
-                float dir_squared_len = dir.sqr_length();
+               
 
-                float col_squared_len = (tank.get_collision_radius() + other->col_get_collision_radius());
-                col_squared_len *= col_squared_len;
-
-                //No collision > continue in for loop
-                if (dir_squared_len > col_squared_len)
-                {
-                    continue;
-
-                }
+                
 
                 //Tank collision
                 if (other->collider_type == Collider::TANK) {
-                    tank.push(dir.normalized(), 1.f);
+                    //Check if "other" collides with the tank
+                    vec2 dir = tank.get_position() - other->col_get_current_position();
+                    float dir_squared_len = dir.sqr_length();
+
+                    float col_squared_len = (tank.get_collision_radius() + other->col_get_collision_radius());
+                    col_squared_len *= col_squared_len;
+                    //No collision > continue in for loop
+                    if (dir_squared_len < col_squared_len)
+                    {
+                        tank.push(dir.normalized(), 1.f);
+                        continue;
+                    }
                 }
 
-
+                
                 //Rocket collision
                 if (other->collider_type == Collider::ROCKET) {
                     Rocket* rocket = dynamic_cast<Rocket*>(other);
@@ -436,6 +468,8 @@ void Game::update(float deltaTime)
 
     wait_and_clear(threads);
 
+    
+    
 
 
     vector<vec2> points;
@@ -443,72 +477,57 @@ void Game::update(float deltaTime)
     //Calculate "forcefield" around active tanks, clears forcefield here
     forcefield_hull.clear();
     points_on_hull.clear();
-
+    
     //Calculate convex hull for 'rocket barrier'
     //Update tanks
-    for (Tank t : active_tanks) {
-        if (!t.active) {
-            inactive_tanks.push_back(t);
+    for (Tank& tank : active_tanks) {
+        if (tank.active) {
+            
+            //Move tanks according to speed and nudges (see above) also reload
+            tank.tick(background_terrain);
+            //Pushes points for use in convex hull
+            points.push_back({ tank.get_position().x, tank.get_position().y });
+        }
+        else {
+            inactive_tanks.push_back(tank);
+
         }
     }
+    //Remove inactive tanks from active list
     active_tanks.erase(std::remove_if(active_tanks.begin(), active_tanks.end(), [](const Tank& tank) { return !tank.active; }), active_tanks.end());
 
-    //for (size_t x = 0; x < NUM_OF_THREADS; x++)
-    //{
-    //    int startAt = 0;
-    //    startAt = x * active_tanks.size() / NUM_OF_THREADS;
-
-    //    threads.push_back(pool->enqueue([&, startAt]() {
-    //        for (size_t i = 0; i < active_tanks.size() / NUM_OF_THREADS; i++)
-    //        {
-    //            Tank& tank = active_tanks.at(i + startAt);
-    //            tank.tick(background_terrain);
-
-    //            //Shoot at closest target if reloaded
-
-    //            if (tank.rocket_reloaded())
-    //            {
-    //                Tank& target = find_closest_enemy(tank);
-    //                mlock.lock();
-    //                rockets.push_back(Rocket(tank.position, (target.get_position() - tank.position).normalized() * 3, rocket_radius, tank.allignment, ((tank.allignment == RED) ? &rocket_red : &rocket_blue)));
-    //                mlock.unlock();
-    //                tank.reload_rocket();
-    //            }
-    //            //Pushes points for use in convex hull
-    //            mlock.lock();
-    //            points.push_back({ tank.get_position().x, tank.get_position().y });
-    //            mlock.unlock();
-    //        }
-    //        }));
-    //}
-    //wait_and_clear(threads);
-    for (Tank& tank : active_tanks)
-    {
-                   
-        //Move tanks according to speed and nudges (see above) also reload
-        tank.tick(background_terrain);
-
-        //Shoot at closest target if reloaded
-
-        if (tank.rocket_reloaded())
-        {
-            Tank& target = find_closest_enemy(tank);
-
-            rockets.push_back(Rocket(tank.position, (target.get_position() - tank.position).normalized() * 3, rocket_radius, tank.allignment, ((tank.allignment == RED) ? &rocket_red : &rocket_blue)));
-
-            tank.reload_rocket();
+    auto convex_hull_task = pool->enqueue([&]() {
+        //Calculates points_on_hull
+        convex_hull(points);
+        for (vec2& point_on_hull : points_on_hull) {
+            forcefield_hull.push_back(point_on_hull);
         }
-        //Pushes points for use in convex hull
-        points.push_back({ tank.get_position().x, tank.get_position().y });
+        });
+
+    for (size_t x = 0; x < NUM_OF_THREADS; x++)
+    {
+        int startAt = 0;
+        startAt = x * active_tanks.size() / NUM_OF_THREADS;
+
+        threads.push_back(pool->enqueue([&, startAt]() {
+            for (size_t i = 0; i < active_tanks.size() / NUM_OF_THREADS; i++)
+            {
+                Tank& tank = active_tanks.at(i + startAt);
+                if (tank.rocket_reloaded())
+                {
+
+                    Tank& target = find_closest_enemy(tank);
+                    mlock.lock();
+                    rockets.push_back(Rocket(tank.position, (target.get_position() - tank.position).normalized() * 3, rocket_radius, tank.allignment, ((tank.allignment == RED) ? &rocket_red : &rocket_blue)));
+                    mlock.unlock();
+                    tank.reload_rocket();
+                }
+            }
+            }));
     }
-
-   
-
-    //Calculates points_on_hull
-    convex_hull(points);
-    //Draws all points of the forcefield
-    for (vec2& point_on_hull : points_on_hull)
-        forcefield_hull.push_back(point_on_hull);
+    wait_and_clear(threads);
+        //Shoot at closest target if reloaded
+        
 
    
     //Update smoke plumes
@@ -522,7 +541,20 @@ void Game::update(float deltaTime)
     {
         rocket.tick();
     }
-   
+    //Update particle beams
+    for (Particle_beam& particle_beam : particle_beams)
+    {
+        particle_beam.tick(active_tanks);
+
+        
+    }
+    //Disable rockets if they collide with the "forcefield"
+    //Hint: A point to convex hull intersection test might be better here? :) (Disable if outside)
+
+    
+    
+    convex_hull_task.wait();
+        
     for (Rocket& rocket : rockets)
     {
         if (rocket.active && frame_count > 1)
@@ -542,13 +574,7 @@ void Game::update(float deltaTime)
     //Remove exploded rockets with remove erase idiom
     rockets.erase(std::remove_if(rockets.begin(), rockets.end(), [](const Rocket& rocket) { return !rocket.active; }), rockets.end());
 
-    //Update particle beams
-    for (Particle_beam& particle_beam : particle_beams)
-    {
-        particle_beam.tick(active_tanks);
-
-        
-    }
+    
 
     //Update explosion sprites and remove when done with remove erase idiom
     for (Explosion& explosion : explosions)
@@ -574,7 +600,6 @@ void Game::draw()
     size_t blue_count = 0;
     size_t red_count = 0;
     for (Tank t : active_tanks) {
-        if (!t.active) continue;
         if (t.allignment == BLUE) {
             blue_count++;
         }
@@ -610,7 +635,6 @@ void Game::draw()
         sorting::health_merge_sort(blue_tanks, 0, blue_count - 1);
         sorting::health_merge_sort(red_tanks, 0, red_count - 1);
 
-        return (blue_tanks, red_tanks);
         });
 
    
@@ -651,12 +675,11 @@ void Game::draw()
         explosion.draw(screen);
     }
     
-    int force_field_size = forcefield_hull.size();
     //Draw forcefield (mostly for debugging, its kinda ugly..)
     for (size_t i = 0; i < forcefield_hull.size(); i++)
     {
         vec2 line_start = forcefield_hull.at(i);
-        vec2 line_end = forcefield_hull.at((i + 1) % force_field_size);
+        vec2 line_end = forcefield_hull.at((i + 1) % forcefield_hull.size());
         line_start.x += HEALTHBAR_OFFSET;
         line_end.x += HEALTHBAR_OFFSET;
         screen->line(line_start, line_end, 0x0000ff);
