@@ -541,16 +541,12 @@ void Game::update(float deltaTime)
     for (Particle_beam& particle_beam : particle_beams)
     {
         particle_beam.tick(active_tanks);
-
-
     }
-    //Disable rockets if they collide with the "forcefield"
-    //Hint: A point to convex hull intersection test might be better here? :) (Disable if outside)
-
-
 
     convex_hull_task.wait();
 
+    //Disable rockets if they collide with the "forcefield"
+    //Hint: A point to convex hull intersection test might be better here? :) (Disable if outside)
     for (Rocket& rocket : rockets)
     {
         if (rocket.active && frame_count > 1)
