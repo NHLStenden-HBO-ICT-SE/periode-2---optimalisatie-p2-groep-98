@@ -165,19 +165,11 @@ Tank& Game::find_closest_enemy(Tank& current_tank)
 
 vector<vec2> points_on_hull;
 
-//Checks if a point lies on the left of an arbitrary angled line
-bool Tmpl8::Game::left_of_line(vec2 line_start, vec2 line_end, vec2 point)
-{
-    return ((line_end.x - line_start.x) * (point.y - line_start.y) - (line_end.y - line_start.y) * (point.x - line_start.x)) < 0;
-}
-
-
-
 /// <summary>
 /// Waits for all futures in the array and then clears the array.
 /// </summary>
 /// <param name="threads"></param>
-void wait_and_clear(vector<future<void>> &threads) {
+void wait_and_clear(vector<future<void>>& threads) {
     for (future<void>& t : threads) {
         t.wait();
     }
@@ -206,7 +198,6 @@ void swap(vec2& p1, vec2& p2)
 
 void convex_hull(vector<vec2> points)
 {
-    int i = 0;
     // Find the bottommost point
     float ymin = points.at(0).y, min = 0;
     for (int i = 1; i < points.size(); i++)
@@ -223,7 +214,7 @@ void convex_hull(vector<vec2> points)
 
     // Sort n-1 points with respect to the first point.
     // A point p1 comes before p2 in sorted output if p2 has larger polar angle (in counterclockwise direction) than p1
-    vec2* arr_points = new vec2[points.size() ];
+    vec2* arr_points = new vec2[points.size()];
     for (size_t i = 0; i < points.size(); i++)
     {
         arr_points[i] = points.at(i);
@@ -231,7 +222,7 @@ void convex_hull(vector<vec2> points)
 
     sorting::convex_merge_sort(arr_points, 0, points.size() - 1);
 
-    
+
     int size = points.size();
 
     // If two or more points make same angle with p0,
@@ -274,7 +265,6 @@ void convex_hull(vector<vec2> points)
         points_on_hull.push_back(p);
         S.pop();
 
-        i++;
     }
     delete[] arr_points;
 }
@@ -313,12 +303,12 @@ void Game::update(float deltaTime)
                 }));
         }
 
-        
+
         wait_and_clear(threads);
-        
+
         //background_terrain.initializeTilesNeighbours();
         grid->initializeTilesNeighbours();
-     
+
         for (Particle_beam& particle_beam : particle_beams) {
             grid->update_tile(&particle_beam);
 
@@ -326,17 +316,17 @@ void Game::update(float deltaTime)
         }
     }
 
-   
+
     grid->clearGrid();
-    
-  
-    
+
+
+
     int item_count = rockets.size() + active_tanks.size();
     int rocket_threads = rockets.size() / item_count * NUM_OF_THREADS;
     int tank_threads = NUM_OF_THREADS - rocket_threads;
 
-    
-    
+
+
     for (size_t x = 0; x < tank_threads; x++)
     {
         int startAt = 0;
@@ -373,8 +363,8 @@ void Game::update(float deltaTime)
         }
     }
     wait_and_clear(threads);
-    
-   
+
+
 
     //COLLISION DETECTION
     //Split the list into SPLIT_AMOUNT parts and give each part to a thread
@@ -384,83 +374,83 @@ void Game::update(float deltaTime)
         startAt = x * active_tanks.size() / NUM_OF_THREADS;
 
         threads.push_back(pool->enqueue([&, startAt]() {
-        for (size_t i = 0; i < active_tanks.size() / NUM_OF_THREADS; i++)
-        {
-            Tank& tank = active_tanks.at(i + startAt);
+            for (size_t i = 0; i < active_tanks.size() / NUM_OF_THREADS; i++)
+            {
+                Tank& tank = active_tanks.at(i + startAt);
 
-                           
-            
-            CollisionTile* tank_tile = grid->getTileFor(tank.get_position());
 
-            //Get a list of all collidables near the tile
-            vector<Collidable*> possible_collisions = tank_tile->getPossibleCollidables();
-            for (Collidable* other : possible_collisions) {
-                if (&tank == other) continue;
 
-                //Collidable for making sure the tank only hits the particle once in a frame
-                // Because multiple tiles around the tank contain the same particle collidable
-                Particle_beam *hitParticle = nullptr;
+                CollisionTile* tank_tile = grid->getTileFor(tank.get_position());
 
-                //Since the beam does not have a position and round collision field, check it first.
-                if (other->collider_type == Collider::BEAM && hitParticle != other) {
-                    Particle_beam* particle_beam = dynamic_cast<Particle_beam*>(other);
-                    vec2 pos = tank.col_get_current_position();
-                    float radius = tank.col_get_collision_radius();
-                    if (tank.active && particle_beam->rectangle.intersects_circle(pos, radius) )
-                    {
-                        if (tank.hit(particle_beam->damage))
+                //Get a list of all collidables near the tile
+                vector<Collidable*> possible_collisions = tank_tile->getPossibleCollidables();
+                for (Collidable* other : possible_collisions) {
+                    if (&tank == other) continue;
+
+                    //Collidable for making sure the tank only hits the particle once in a frame
+                    // Because multiple tiles around the tank contain the same particle collidable
+                    Particle_beam* hitParticle = nullptr;
+
+                    //Since the beam does not have a position and round collision field, check it first.
+                    if (other->collider_type == Collider::BEAM && hitParticle != other) {
+                        Particle_beam* particle_beam = dynamic_cast<Particle_beam*>(other);
+                        vec2 pos = tank.col_get_current_position();
+                        float radius = tank.col_get_collision_radius();
+                        if (tank.active && particle_beam->rectangle.intersects_circle(pos, radius))
                         {
-                            hitParticle = particle_beam;
-                            mlock.lock();
-                            smokes.push_back(Smoke(smoke, tank.position - vec2(0, 48)));
-                            mlock.unlock();
+                            if (tank.hit(particle_beam->damage))
+                            {
+                                hitParticle = particle_beam;
+                                mlock.lock();
+                                smokes.push_back(Smoke(smoke, tank.position - vec2(0, 48)));
+                                mlock.unlock();
+                            }
                         }
                     }
-                }
 
-               
 
-                
 
-                //Tank collision
-                if (other->collider_type == Collider::TANK) {
-                    //Check if "other" collides with the tank
-                    vec2 dir = tank.get_position() - other->col_get_current_position();
-                    float dir_squared_len = dir.sqr_length();
 
-                    float col_squared_len = (tank.get_collision_radius() + other->col_get_collision_radius());
-                    col_squared_len *= col_squared_len;
-                    //No collision > continue in for loop
-                    if (dir_squared_len < col_squared_len)
-                    {
-                        tank.push(dir.normalized(), 1.f);
-                        continue;
+
+                    //Tank collision
+                    if (other->collider_type == Collider::TANK) {
+                        //Check if "other" collides with the tank
+                        vec2 dir = tank.get_position() - other->col_get_current_position();
+                        float dir_squared_len = dir.sqr_length();
+
+                        float col_squared_len = (tank.get_collision_radius() + other->col_get_collision_radius());
+                        col_squared_len *= col_squared_len;
+                        //No collision > continue in for loop
+                        if (dir_squared_len < col_squared_len)
+                        {
+                            tank.push(dir.normalized(), 1.f);
+                            continue;
+                        }
                     }
-                }
 
-                
-                //Rocket collision
-                if (other->collider_type == Collider::ROCKET) {
-                    Rocket* rocket = dynamic_cast<Rocket*>(other);
-                    if (tank.active && (tank.allignment != rocket->allignment) && rocket->intersects(tank.position, tank.collision_radius))
-                    {   
-                        mlock.lock();
-                        explosions.push_back(Explosion(&explosion, tank.position));
-                        mlock.unlock();
-                      
-                        if (tank.hit(rocket_hit_value))
+
+                    //Rocket collision
+                    if (other->collider_type == Collider::ROCKET) {
+                        Rocket* rocket = dynamic_cast<Rocket*>(other);
+                        if (tank.active && (tank.allignment != rocket->allignment) && rocket->intersects(tank.position, tank.collision_radius))
                         {
                             mlock.lock();
-                            smokes.push_back(Smoke(smoke, tank.position - vec2(7, 24)));
+                            explosions.push_back(Explosion(&explosion, tank.position));
                             mlock.unlock();
+
+                            if (tank.hit(rocket_hit_value))
+                            {
+                                mlock.lock();
+                                smokes.push_back(Smoke(smoke, tank.position - vec2(7, 24)));
+                                mlock.unlock();
+                            }
+
+                            rocket->active = false;
+                            break;
                         }
-
-                        rocket->active = false;
-                        break;
                     }
-                }
 
-            }
+                }
             }
             }));
 
@@ -468,8 +458,8 @@ void Game::update(float deltaTime)
 
     wait_and_clear(threads);
 
-    
-    
+
+
 
 
     vector<vec2> points;
@@ -477,16 +467,16 @@ void Game::update(float deltaTime)
     //Calculate "forcefield" around active tanks, clears forcefield here
     forcefield_hull.clear();
     points_on_hull.clear();
-    
+
     //Calculate convex hull for 'rocket barrier'
     //Update tanks
     for (Tank& tank : active_tanks) {
         if (tank.active) {
-            
+
             //Move tanks according to speed and nudges (see above) also reload
             tank.tick(background_terrain);
             //Pushes points for use in convex hull
-            points.push_back({ tank.get_position().x, tank.get_position().y });
+            points.push_back(tank.get_position());
         }
         else {
             inactive_tanks.push_back(tank);
@@ -499,10 +489,9 @@ void Game::update(float deltaTime)
     auto convex_hull_task = pool->enqueue([&]() {
         //Calculates points_on_hull
         convex_hull(points);
-        for (vec2& point_on_hull : points_on_hull) {
+        for (vec2& point_on_hull : points_on_hull)
             forcefield_hull.push_back(point_on_hull);
-        }
-        });
+    });
 
     for (size_t x = 0; x < NUM_OF_THREADS; x++)
     {
@@ -526,11 +515,11 @@ void Game::update(float deltaTime)
             }));
     }
     wait_and_clear(threads);
-        //Shoot at closest target if reloaded
-        
+    //Shoot at closest target if reloaded
 
-   
-    //Update smoke plumes
+
+
+//Update smoke plumes
     for (Smoke& smoke : smokes)
     {
         smoke.tick();
@@ -546,15 +535,15 @@ void Game::update(float deltaTime)
     {
         particle_beam.tick(active_tanks);
 
-        
+
     }
     //Disable rockets if they collide with the "forcefield"
     //Hint: A point to convex hull intersection test might be better here? :) (Disable if outside)
 
-    
-    
+
+
     convex_hull_task.wait();
-        
+
     for (Rocket& rocket : rockets)
     {
         if (rocket.active && frame_count > 1)
@@ -569,12 +558,12 @@ void Game::update(float deltaTime)
             }
         }
     }
-    
+
 
     //Remove exploded rockets with remove erase idiom
     rockets.erase(std::remove_if(rockets.begin(), rockets.end(), [](const Rocket& rocket) { return !rocket.active; }), rockets.end());
 
-    
+
 
     //Update explosion sprites and remove when done with remove erase idiom
     for (Explosion& explosion : explosions)
@@ -583,7 +572,7 @@ void Game::update(float deltaTime)
     }
 
     explosions.erase(std::remove_if(explosions.begin(), explosions.end(), [](const Explosion& explosion) { return explosion.done(); }), explosions.end());
-   
+
 }
 
 
@@ -630,15 +619,15 @@ void Game::draw()
     }
     //Start a thread to sort the health values.
     auto sort = pool->enqueue([&]() {
-        
+
 
         sorting::health_merge_sort(blue_tanks, 0, blue_count - 1);
         sorting::health_merge_sort(red_tanks, 0, red_count - 1);
 
         });
 
-   
-    
+
+
     // clear the graphics window
     screen->clear(0);
 
@@ -646,14 +635,14 @@ void Game::draw()
     background_terrain.draw(screen);
 
     //Draw sprites
-    
+
     for (Tank t : active_tanks) {
         t.draw(screen);
     }
     for (Tank t : inactive_tanks) {
         t.draw(screen);
     }
-    
+
 
     for (Rocket& rocket : rockets)
     {
@@ -674,7 +663,7 @@ void Game::draw()
     {
         explosion.draw(screen);
     }
-    
+
     //Draw forcefield (mostly for debugging, its kinda ugly..)
     for (size_t i = 0; i < forcefield_hull.size(); i++)
     {
@@ -686,18 +675,18 @@ void Game::draw()
     }
 
     //Draw sorted health 
-   
+
     sort.wait();
     draw_health_bars(blue_tanks, 0, blue_count);
 
     draw_health_bars(red_tanks, 1, red_count);
 
-    
+
 
     delete[] blue_tanks;
     delete[] red_tanks;
 
-    
+
 }
 
 
@@ -710,7 +699,7 @@ void Game::draw()
 // -----------------------------------------------------------
 // Draw the health bars based on the given tanks health values
 // -----------------------------------------------------------
-void Tmpl8::Game::draw_health_bars(const int sorted_health[], const int team,const int team_size)
+void Tmpl8::Game::draw_health_bars(const int sorted_health[], const int team, const int team_size)
 {
     int health_bar_start_x = (team < 1) ? 0 : (SCRWIDTH - HEALTHBAR_OFFSET) - 1;
     int health_bar_end_x = (team < 1) ? health_bar_width : health_bar_start_x + health_bar_width - 1;
@@ -779,13 +768,13 @@ void Tmpl8::Game::measure_performance()
 // -----------------------------------------------------------
 void Game::tick(float deltaTime)
 {
-    
-    
+
+
     if (!lock_update)
     {
         update(deltaTime);
     }
-    
+
     draw();
 
     measure_performance();
