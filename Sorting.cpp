@@ -1,21 +1,22 @@
 #include "precomp.h"
-#include "Sorting.h"
+#include "sorting.h"
+
 // To find orientation of ordered triplet (p, q, r).
 // The function returns following values
-// 0 --> p, q and r are collinear
-// 1 --> Clockwise
-// 2 --> Counterclockwise
-
-int Sorting::orientation(vec2 p, vec2 q, vec2 r)
+// 0 = p, q and r are collinear
+// 1 = Clockwise
+// 2 = Counterclockwise
+int sorting::orientation(vec2 p, vec2 q, vec2 r)
 {
     float val = (q.y - p.y) * (r.x - q.x) -
         (q.x - p.x) * (r.y - q.y);
 
     if (val == 0)
         return 0;  // collinear
-    return (val > 0)
-        ? 1
-        : 2; // clock or counterclock wise
+    if (val > 0) // clock or counterclock wise
+        return 1;
+    else
+        return 2;
 }
 
 // Square of distance between p1 and p2
@@ -32,7 +33,7 @@ int compare(vec2 point1, vec2 point2, vec2 p0)
 {
     vec2 p1 = point1;
     vec2 p2 = point2;
-    int dir = Sorting::orientation(p0, p1, p2);
+    int dir = sorting::orientation(p0, p1, p2);
 
     if (dir == 0)
         return (distance_square(p0, p2) >= distance_square(p0, p1)) ? -1 : 1;
@@ -40,7 +41,7 @@ int compare(vec2 point1, vec2 point2, vec2 p0)
 }
 
 
-void Sorting::convex_merge(vec2 to_sort[], int const left, int const mid, int const right)
+void sorting::convex_merge(vec2 to_sort[], int const left, int const mid, int const right)
 {
     int sub_array_1 = mid - left + 1;
     int sub_array_2 = right - mid;
@@ -93,7 +94,7 @@ void Sorting::convex_merge(vec2 to_sort[], int const left, int const mid, int co
 }
 
 
-void Sorting::convex_merge_sort(vec2 list[], int const begin, int const end)
+void sorting::convex_merge_sort(vec2 list[], int const begin, int const end)
 {
     if (begin >= end) {
         return;
@@ -106,7 +107,7 @@ void Sorting::convex_merge_sort(vec2 list[], int const begin, int const end)
 }
 
 
-void Sorting::health_merge(int to_sort[], int const left, int const mid, int const right)
+void sorting::health_merge(int to_sort[], int const left, int const mid, int const right)
 {
     int sub_array_1 = mid - left + 1;
     int sub_array_2 = right - mid;
@@ -159,7 +160,7 @@ void Sorting::health_merge(int to_sort[], int const left, int const mid, int con
 }
 
 
-void Sorting::health_merge_sort(int array_to_sort[], int const begin_index, int const end_index)
+void sorting::health_merge_sort(int array_to_sort[], int const begin_index, int const end_index)
 {
     if (begin_index >= end_index) return;
 

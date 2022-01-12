@@ -169,6 +169,7 @@ vec2 next_to_top(stack<vec2>& S)
     return res;
 }
 
+
 // Swap two points
 void swap(vec2& p1, vec2& p2)
 {
@@ -177,7 +178,7 @@ void swap(vec2& p1, vec2& p2)
     p2 = temp;
 }
 
-// Prints convex hull of a set of n points.
+
 void convex_hull(vector<vec2> points)
 {
     int i = 0;
@@ -192,24 +193,21 @@ void convex_hull(vector<vec2> points)
             ymin = points.at(i).y, min = i;
     }
 
-    // Place the bottom-most point at first position
+    // Swap bottom most point with first position
     swap(points.at(0), points.at(min));
 
     // Sort n-1 points with respect to the first point.
     // A point p1 comes before p2 in sorted output if p2 has larger polar angle (in counterclockwise direction) than p1
-
     vec2* arr_points = new vec2[points.size() ];
     for (size_t i = 0; i < points.size(); i++)
     {
         arr_points[i] = points.at(i);
     }
 
-    Sorting::convex_merge_sort(arr_points, 0, points.size() - 1);
+    sorting::convex_merge_sort(arr_points, 0, points.size() - 1);
 
     
     int size = points.size();
-
-
 
     // If two or more points make same angle with p0,
     // Remove all but the one that is farthest from p0
@@ -217,7 +215,7 @@ void convex_hull(vector<vec2> points)
     for (int i = 1; i < size; i++)
     {
         // Keep removing i while angle of i and i+1 is same with respect to p0
-        while (i < size - 1 && Sorting::orientation(arr_points[0], arr_points[i],
+        while (i < size - 1 && sorting::orientation(arr_points[0], arr_points[i],
             arr_points[i + 1]) == 0)
             i++;
 
@@ -226,7 +224,7 @@ void convex_hull(vector<vec2> points)
         m++;
     }
 
-    // If modified array of points has less than 3 points, convex hull is not possible
+    // If points has less than 3 points, convex hull is not possible
     if (m < 3)
         return;
 
@@ -239,12 +237,11 @@ void convex_hull(vector<vec2> points)
     for (int i = 3; i < m; i++)
     {
         // Keep removing top while the angle formed by points next-to-top, top, and points[i] makes a non-left turn
-        while (S.size() > 1 && Sorting::orientation(next_to_top(S), S.top(), arr_points[i]) != 2)
+        while (S.size() > 1 && sorting::orientation(next_to_top(S), S.top(), arr_points[i]) != 2)
             S.pop();
         S.push(arr_points[i]);
     }
 
-    // Result stack has the output points
     while (!S.empty())
     {
         vec2 p = S.top();
@@ -306,13 +303,6 @@ void Game::update(float deltaTime)
 
     grid->clearGrid();
     
-  
-    
-        
-
-    
-
-    
     int item_count = rockets.size() + active_tanks.size();
     int rocket_threads = rockets.size() / item_count * NUM_OF_THREADS;
     int tank_threads = NUM_OF_THREADS - rocket_threads;
@@ -354,12 +344,6 @@ void Game::update(float deltaTime)
     }
     wait_and_clear(threads);
     
-    
-
-
-    
-    
-
    
 
     //COLLISION DETECTION
@@ -452,7 +436,6 @@ void Game::update(float deltaTime)
 
     wait_and_clear(threads);
 
-    
 
 
     vector<vec2> points;
@@ -539,12 +522,6 @@ void Game::update(float deltaTime)
     {
         rocket.tick();
     }
-
-    //Disable rockets if they collide with the "forcefield"
-    //Hint: A point to convex hull intersection test might be better here? :) (Disable if outside)
-
-    
-    
    
     for (Rocket& rocket : rockets)
     {
@@ -630,8 +607,8 @@ void Game::draw()
     auto sort = pool->enqueue([&]() {
         
 
-        Sorting::health_merge_sort(blue_tanks, 0, blue_count - 1);
-        Sorting::health_merge_sort(red_tanks, 0, red_count - 1);
+        sorting::health_merge_sort(blue_tanks, 0, blue_count - 1);
+        sorting::health_merge_sort(red_tanks, 0, red_count - 1);
 
         return (blue_tanks, red_tanks);
         });
