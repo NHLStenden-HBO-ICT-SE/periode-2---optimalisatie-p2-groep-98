@@ -1,5 +1,5 @@
 #pragma once
-class Sorting
+class sorting
 {
 public:
 	static int orientation(vec2 p, vec2 q, vec2 r);
