@@ -325,7 +325,7 @@ void Game::update(float deltaTime)
         wait_and_clear(threads);
 
         init.wait();
-        
+
     }
 
     grid->clearGrid();
@@ -489,7 +489,6 @@ void Game::update(float deltaTime)
         convex_hull(points);
         for (vec2& point_on_hull : points_on_hull)
             forcefield_hull.push_back(point_on_hull);
-        }
         });
     startAt = 0;
     for (int count : split_sizes_tanks) {
@@ -516,7 +515,7 @@ void Game::update(float deltaTime)
 
 
 
-//Update smoke plumes
+    //Update smoke plumes
     for (Smoke& smoke : smokes)
     {
         smoke.tick();
@@ -610,7 +609,7 @@ void Game::draw()
         }
     }
     //Start a thread to sort the health values.
-    auto sort_blue = pool->enqueue([&]() {        
+    auto sort_blue = pool->enqueue([&]() {
         sorting::health_merge_sort(blue_tanks, 0, blue_count - 1);
         });
     auto sort_red = pool->enqueue([&]() {
