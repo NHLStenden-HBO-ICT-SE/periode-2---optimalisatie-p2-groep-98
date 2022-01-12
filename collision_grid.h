@@ -75,8 +75,8 @@ private:
     //Original width: 80
     //Original height: 45
     //Scale them proportionally, width + 16 and height + 9
-    static constexpr size_t width = 64;
-    static constexpr size_t height = 37;
+    static constexpr size_t width = 80;
+    static constexpr size_t height = 45;
 
     //Divider used to find tile index by world position.
     static constexpr size_t divider = 1280/width;

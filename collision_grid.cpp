@@ -14,7 +14,7 @@ void CollisionGrid::initializeTilesNeighbours()
                 this->getTile(x, y + 1),        //up
                 this->getTile(x, y - 1),        //down
                 this->getTile(x - 1, y),        //left
-                this->getTile(x, y),            //right
+                this->getTile(x + 1, y),            //right
                 this->getTile(x + 1, y + 1),    //r_up
                 this->getTile(x - 1, y + 1),    //l_up
                 this->getTile(x + 1, y - 1),    //r_down
@@ -70,7 +70,7 @@ void CollisionGrid::update_tile(Collidable* col)
         
         //Get all the tiles in between the corners
         for (int x = p_lo.x; x < p_ro.x + 1; x++) {
-            for (int y = p_lo.y; y < p_lb.y; y++) {
+            for (int y = p_lo.y; y < p_lb.y + 1; y++) {
                 mlock->lock();
                 getTile(x, y)->addCollidable(col);
                 mlock->unlock();
@@ -91,7 +91,6 @@ void CollisionGrid::update_tile(Collidable* col)
 vec2 CollisionGrid::getTileIndex(const vec2 pos) {
     size_t pos_x = pos.x / divider;
     size_t pos_y = pos.y / divider;
-    TerrainTile* tile;
 
     pos_x = min(pos_x, width - 1);
     pos_y = min(pos_y, height - 1);
@@ -103,7 +102,6 @@ CollisionTile* CollisionGrid::getTileFor(const vec2& pos)
     
     size_t pos_x = pos.x / divider;
     size_t pos_y = pos.y / divider;
-    TerrainTile* tile;
     
     pos_x = min(pos_x, width-1);
     pos_y = min(pos_y, height-1);
