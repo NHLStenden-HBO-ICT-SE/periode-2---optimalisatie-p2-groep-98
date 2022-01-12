@@ -14,7 +14,7 @@ void CollisionGrid::initializeTilesNeighbours()
                 this->getTile(x, y + 1),        //up
                 this->getTile(x, y - 1),        //down
                 this->getTile(x - 1, y),        //left
-                this->getTile(x, y),            //right
+                this->getTile(x + 1, y),            //right
                 this->getTile(x + 1, y + 1),    //r_up
                 this->getTile(x - 1, y + 1),    //l_up
                 this->getTile(x + 1, y - 1),    //r_down

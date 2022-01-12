@@ -156,6 +156,10 @@ Tank& Game::find_closest_enemy(Tank& current_tank)
 	if (closest) {
 		return *closest;
 	}
+	
+
+
+
 	//If there is no tank in a neighbour tile, check all other
 	for (int i = 0; i < active_tanks.size(); i++)
 	{
@@ -309,7 +313,6 @@ void Game::update(float deltaTime)
 	//Initializing routes here so it gets counted for performance..
 	if (frame_count == 0)
 	{
-
 		//Pathfinding
 		int startAt = 0;
 		for (int count : split_sizes_tanks) {
