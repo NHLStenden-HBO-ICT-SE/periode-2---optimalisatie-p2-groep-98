@@ -25,7 +25,7 @@ De Multithreaded Quadtree is nog werkend te zien in de branch: [`QuadtreeWorking
 
 ### **Merge sort ([`game.cpp`](./Sorting.cpp#L383))**
 Voor de health bar werd *insertion sort* gebruikt. Dit hebben wij aangepast naar *merge sort*.
-We kwamen er achter dat vectoren het process erg vertraagden. Daarom hebben wij arrays gebruikt. De merge sort wordt gebruikt voor de [`health bar`](./game.cpp#L0011) en voor het sorteren van vec2 in de [`convex hull`](./game.cpp#L0000).
+We kwamen er achter dat vectoren het process erg vertraagden. Daarom hebben wij arrays gebruikt. De merge sort wordt gebruikt voor de [`health bar`](./game.cpp#L0011) en voor het sorteren van vec2 in de [`convex hull`](./game.cpp#L0000). *Merge Sort* is zonder deze verandering langzamer dan *insertion sort*, omdat merge sort langzaam als er veel items met dezelfde value zijn.
 
 #### Big-O:
 
