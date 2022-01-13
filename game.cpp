@@ -141,7 +141,6 @@ void Game::update(float deltaTime)
     //Optimize, create a list with active tanks instead of checking in the tanks list
 
 
-    auto begin = chrono::high_resolution_clock::now();
     for (Tank& tank : tanks)
     {
         if (tank.active)
@@ -166,10 +165,7 @@ void Game::update(float deltaTime)
             }
         }
     }
-    auto end = chrono::high_resolution_clock::now();
-    auto dur = end - begin;
-    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(dur).count();
-    cout << ms << endl;
+    
 
 
     //Update tanks
