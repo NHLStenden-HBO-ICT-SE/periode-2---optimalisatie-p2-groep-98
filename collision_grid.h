@@ -14,7 +14,7 @@ public:
     /// Get all Collidables in tiles around the tile
     /// </summary>
     /// <returns>All near collidables</returns>
-    vector<Collidable*> getPossibleCollidables();
+    vector<Collidable*> get_possible_collidables();
     
     vector<Collidable*> objects;
     vector<Collidable*> beams;
@@ -39,7 +39,7 @@ public:
     /// Calculate all neighbour tiles. Should only be run once.
     /// Needs the tiles array to be filled.
     /// </summary>
-    void initializeTilesNeighbours();
+    void initialize_tiles_neighbours();
     /// <summary>
     /// Get tile at index
     /// </summary>
@@ -61,7 +61,7 @@ public:
     /// <summary>
     /// Clear all objects from the grid except for the particle beams.
     /// </summary>
-    void clearGrid();
+    void clear_grid();
     /// <summary>
     /// Lock for multithreading
     /// </summary>

@@ -1,7 +1,7 @@
 #include "precomp.h"
 #include "collision_grid.h"
 
-void CollisionGrid::initializeTilesNeighbours()
+void CollisionGrid::initialize_tiles_neighbours()
 {
     for (size_t y = 0; y < tiles.size(); y++)
     {
@@ -75,7 +75,7 @@ void CollisionGrid::update_tile(Collidable* col)
                 getTile(x, y)->addCollidable(col);
                 mlock->unlock();
             }
-        }
+        } 
         return;
     }
 
@@ -109,7 +109,7 @@ CollisionTile* CollisionGrid::getTileFor(const vec2& pos)
     return &tiles.at(pos_y).at(pos_x);
 }
 
-void CollisionGrid::clearGrid()
+void CollisionGrid::clear_grid()
 {
     for (size_t y = 0; y < tiles.size(); y++)
     {
@@ -125,7 +125,7 @@ void CollisionGrid::clearGrid()
 }
 
 
-vector<Collidable*> CollisionTile::getPossibleCollidables()
+vector<Collidable*> CollisionTile::get_possible_collidables()
 {
     vector<Collidable*> results = this->objects;
 

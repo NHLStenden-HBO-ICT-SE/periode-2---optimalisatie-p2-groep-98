@@ -18,34 +18,55 @@ De uniform grid heeft een [`constante lookup`](./collision_grid.cpp#L100).
 We hebben de objecten zoals *Tank*, *Rocket* en *Particle Beam*. laten erven van een nieuwe class: *Collidable*. De uniform grid bestaat uit tiles die allemaal collidables kunnen vasthouden. Voor collision worden de omliggende tiles gepakt en met alle objecten gecheckt voor collision.
 
 De Multithreaded Quadtree is nog werkend te zien in de branch: [`QuadtreeWorking`](https://github.com/NHLStenden-HBO-ICT-SE/periode-2---optimalisatie-p2-groep-98/tree/QuadtreeWorking)
-
+#### **Big-O**:
 | Algoritme        | Tijd Complexiteit          | Ruimte Complexiteit  |
 | ------------- |:-------------:| -----:|
 | Origineel     | `O(N^2) `                     | `O(1)`
-| Nieuwe        | `Best: O(1) Worst: O(N^2)`                      | `O(W*H)` |
+| Nieuwe        | `Average: O(1) Worst: O(N^2)`                      | `O(W*H)` |
+
+In de slechtste senario zitten alle tanks in 1 tile en dan worden dus alle tanks met elkaar vergeleken. Oftewel `N^2`.
+In een gemiddeld geval zijn de tanks verspreid en is de detectie dus constant.
+De ruimtecomplexiteit is het aantal `O(T + N)` waar T het aantal tiles is.
 
 
-### **Merge sort ([`game.cpp`](./Sorting.cpp#L185))**
+### **Merge sort ([`sorting.cpp`](./sorting.cpp#L169))**
 Voor de health bar werd *insertion sort* gebruikt. Dit hebben wij aangepast naar *merge sort*.
-We kwamen er achter dat vectoren het process erg vertraagden. Daarom hebben wij arrays gebruikt. De merge sort wordt gebruikt voor de [`health bar`](./game.cpp#L629) en voor het sorteren van vec2 in de [`convex hull`](./game.cpp#L253).
+We kwamen er achter dat vectoren het process erg vertraagden. Daarom hebben wij arrays gebruikt. De merge sort wordt gebruikt voor de [`health bar`](./game.cpp#L626) en voor het sorteren van vec2 in de [`convex hull`](./game.cpp#L252).
 
-#### Big-O:
+
+#### **Big-O**:
 
 | Algoritme        | Tijd Complexiteit         | Ruimte Complexiteit  |
-| ------------- |:-------------:| -----:|
+| ------------- |-------------:| -----:|
 | Origineel     | `O(N^2)`        | `O(1)`  |
 | Nieuwe        | `O(N log N)`    | `O(N)`  |
 
+De lijst wordt elke keer 2 keer gesplit en roept zichzelf 2 keer aan. 
+Dus a = 2 en b =2. `N ^ (Log a b )` = `N^log 2 2 = N`. Dus is de tijd complexiteit : `O(N log N)`.
+
+Omdat de lijst gesplit wordt en de oude er niet blijft is de ruimte complexiteit: `O(N)`.
+
+
+
 ### **Graham Scan Convex hull ([`game.cpp`](./game.cpp#L227))**
 Voor de *convex hull* werd een (volgens ons) brute force manier gebruikt om de hull te berekenen.
-Deze is vervangen door *Graham Scan* in combinatie met *Merge Sort*.
+Deze is vervangen door *Graham Scan* in combinatie met [*Merge Sort*](./sorting.cpp#L103).
 
-#### Big-O:
+#### **Big-O**:
 
 | Algoritme        | Tijd Complexiteit         | Ruimte Complexiteit  |
 | ------------- |:-------------:| -----:|
 | Origineel     | `O(N(V+E))` | `O(N)` |
 | Nieuwe        | `O(N log N)` |   `O(N)` |
+
+In het algoritme wordt het onderste punt gevonden door door de hele lijst te gaan, `O(N)`. Daarna wordt de lijst gesorteerd wat een tijdcomplexiteit heeft van `O(N log N)`. Daarna worden de volgende punten gevonden door weer door de lijst te gaan: `O(N)`. 
+
+En ten slotte worden de punten verwerkt wat ook weer `O(N)` is. Door alles te combineren krijgen we:
+- `O(N) + O(N log N) + O(N) + O(N)`. 
+
+Omdat alleen de grootste factor meetelt is de tijdcomplexiteit: `O(N log N)`.
+
+Alle tanks worden doorlopen, deze worden dus een keer opgeslagen en doorlopen, dus daarom is de ruimte complexiteit: `O(N)`
 
 
 ### **For loops hergebruiken**
@@ -56,7 +77,7 @@ We hebben geprobeerd A* pathfinding toe te passen, deze probeersels zijn nog te 
 
 
 ### Multithreading
-Ook hebben wij bij grote for loops de lijst gesplit in het aantal te gebruiken threads om zo de workload te verspreiden. Bijvoorbeeld bij de [`draw`](./game.cpp#629) functie starten we op 1 thread de merge sort en gaan dan op de main thread verder met schrijven naar de canvas. We gebruiken in dit soort momenten maar 1 thread omdat de overhead anders te groot wordt. De merge sort is al heel erg snel dus het aanmaken van allemaal threads is het niet waard maar op deze manier is het toch net wat sneller. Ditzelfde gebeurt ook bij de [`convex hull`](./game.cpp#502)
+Ook hebben wij bij grote for loops de lijst gesplit in het aantal te gebruiken threads om zo de workload te verspreiden. Bijvoorbeeld bij de [`draw`](./game.cpp#L626) functie starten we op 1 thread de merge sort en gaan dan op de main thread verder met schrijven naar de canvas. We gebruiken in dit soort momenten maar 1 thread omdat de overhead anders te groot wordt. De merge sort is al heel erg snel dus het aanmaken van allemaal threads is het niet waard maar op deze manier is het toch net wat sneller. Ditzelfde gebeurt ook bij de [`convex hull`](./game.cpp#L501)
 
 > Note
 In visual studio worden out of range errors in de "output" gezet. Dit zijn errors die [`opgevangen worden`](./collision_grid.cpp#L46).

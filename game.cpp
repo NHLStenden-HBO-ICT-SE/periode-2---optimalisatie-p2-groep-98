@@ -229,74 +229,73 @@ vector<vec2> convex_hull(vector<vec2> points)
     vector<vec2> points_on_hull;
 
     // Find the bottommost point
-    float ymin = points.at(0).y, min = 0;
+    float y_min = points.at(0).y, min = 0;
     for (int i = 1; i < points.size(); i++)
     {
         float y = points.at(i).y;
 
         // Pick the bottom-most or chose the left most point in case of tie
-        if ((y < ymin) || (ymin == y && points.at(i).x < points.at(min).x))
-            ymin = points.at(i).y, min = i;
+        if ((y < y_min) || (y_min == y && points.at(i).x < points.at(min).x))
+            y_min = points.at(i).y, min = i;
     }
 
-    // Swap bottom most point with first position
+    //Swap the bottom point with the first index
     swap(points.at(0), points.at(min));
 
-    // Sort n-1 points with respect to the first point.
-    // A point p1 comes before p2 in sorted output if p2 has larger polar angle (in counterclockwise direction) than p1
+    
     vec2* arr_points = new vec2[points.size()];
     for (size_t i = 0; i < points.size(); i++)
     {
-        arr_points[i] = points.at(i);
+        arr_points[i] = vec2(points.at(i));
     }
-
+    //Sort the points
     sorting::convex_merge_sort(arr_points, 0, points.size() - 1);
 
 
     int size = points.size();
 
-    // If two or more points make same angle with p0,
-    // Remove all but the one that is farthest from p0
-    int m = 1;
+    // If there are two or more points that have the same angle with p0,
+    // Remove all except for the point with the largest distance to p0
+    int point_count = 1;
     for (int i = 1; i < size; i++)
     {
-        // Keep removing i while angle of i and i+1 is same with respect to p0
-        while (i < size - 1 && sorting::orientation(arr_points[0], arr_points[i],
-            arr_points[i + 1]) == 0)
+        while (i < size - 1 && sorting::orientation(arr_points[0], arr_points[i], arr_points[i + 1]) == 0)
             i++;
 
 
-        points.at(m) = points.at(i);
-        m++;
+        points.at(point_count) = points.at(i);
+        point_count++;
     }
 
-    // If points has less than 3 points, convex hull is not possible
-    if (m < 3)
-        return;
+    // If there are only 3 points, the convex hull is not possible
+    if (point_count < 3)
+        return vector<vec2>{};
 
-    stack<vec2> S;
-    S.push(arr_points[0]);
-    S.push(arr_points[1]);
-    S.push(arr_points[2]);
+    stack<vec2> convex_points;
+    convex_points.push(arr_points[0]);
+    convex_points.push(arr_points[1]);
+    convex_points.push(arr_points[2]);
 
     // Process remaining n-3 points
-    for (int i = 3; i < m; i++)
+    for (int i = 3; i < point_count; i++)
     {
         // Keep removing top while the angle formed by points next-to-top, top, and points[i] makes a non-left turn
-        while (S.size() > 1 && sorting::orientation(next_to_top(S), S.top(), arr_points[i]) != 2)
-            S.pop();
-        S.push(arr_points[i]);
+        while (convex_points.size() > 1 && sorting::orientation(next_to_top(convex_points), convex_points.top(), arr_points[i]) != 2)
+            convex_points.pop();
+        convex_points.push(arr_points[i]);
     }
 
-    while (!S.empty())
+    while (!convex_points.empty())
     {
-        vec2 p = S.top();
+        vec2 p = convex_points.top();
 
         points_on_hull.push_back(p);
-        S.pop();
+        convex_points.pop();
 
     }
     delete[] arr_points;
+
+    points.clear();
     return points_on_hull;
 }
 
@@ -317,7 +316,7 @@ void Game::update(float deltaTime)
     if (frame_count == 0)
     {
         auto init = pool->enqueue([&]() {
-            grid.initializeTilesNeighbours();
+            grid.initialize_tiles_neighbours();
 
             for (Particle_beam& particle_beam : particle_beams) {
                 grid.update_tile(&particle_beam);
@@ -327,17 +326,17 @@ void Game::update(float deltaTime)
 
 
         //Pathfinding
-        int startAt = 0;
+        int start_at = 0;
         for (int count : split_sizes_tanks) {
-            threads.push_back(pool->enqueue([&, startAt, count]() {
+            threads.push_back(pool->enqueue([&, start_at, count]() {
 
-                for (int j = startAt; j < startAt + count; j++)
+                for (int j = start_at; j < start_at + count; j++)
                 {
                     Tank& t = active_tanks.at(j);
                     t.set_route(background_terrain.get_route(t, t.target));
                 }
                 }));
-            startAt += count;
+            start_at += count;
         }
         wait_and_clear(threads);
 
@@ -345,7 +344,7 @@ void Game::update(float deltaTime)
 
     }
 
-    grid.clearGrid();
+    grid.clear_grid();
 
 
     int item_count = rockets.size() + active_tanks.size();
@@ -353,31 +352,31 @@ void Game::update(float deltaTime)
     int tank_threads = NUM_OF_THREADS - rocket_threads;
 
 
-    int startAt = 0;
+    int start_at = 0;
     for (int count : split_sizes_tanks) {
-        threads.push_back(pool->enqueue([&, startAt, count]() {
+        threads.push_back(pool->enqueue([&, start_at, count]() {
 
-            for (int j = startAt; j < startAt + count; j++)
+            for (int j = start_at; j < start_at + count; j++)
             {
                 Tank& tank = active_tanks.at(j);
                 grid.update_tile(&tank);
             }
             }));
-        startAt += count;
+        start_at += count;
     }
     //If the rocket count is big enough, multithread it. Otherwise the overhead is just to big
-    startAt = 0;
+    start_at = 0;
     if (rocket_threads != 0) {
         vector<int> rocket_sizes = get_evenly_splitted(rockets.size(), rocket_threads);
         for (int count : split_sizes_tanks) {
-            threads.push_back(pool->enqueue([&, startAt, count]() {
-                for (int j = startAt; j < startAt + count; j++) {
+            threads.push_back(pool->enqueue([&, start_at, count]() {
+                for (int j = start_at; j < start_at + count; j++) {
 
                     Rocket& rocket = rockets.at(j);
                     grid.update_tile(&rocket);
                 }
                 }));
-            startAt += count;
+            start_at += count;
         }
     }
     else {
@@ -389,27 +388,27 @@ void Game::update(float deltaTime)
 
     //COLLISION DETECTION
     //Split the list into SPLIT_AMOUNT parts and give each part to a thread
-    startAt = 0;
+    start_at = 0;
     for (int count : split_sizes_tanks) {
-        threads.push_back(pool->enqueue([&, startAt, count]() {
+        threads.push_back(pool->enqueue([&, start_at, count]() {
 
-            for (int j = startAt; j < startAt + count; j++)
+            for (int j = start_at; j < start_at + count; j++)
             {
                 Tank& tank = active_tanks.at(j);
 
                 CollisionTile* tank_tile = grid.getTileFor(tank.get_position());
 
                 //Get a list of all collidables near the tile
-                vector<Collidable*> possible_collisions = tank_tile->getPossibleCollidables();
+                vector<Collidable*> possible_collisions = tank_tile->get_possible_collidables();
                 for (Collidable* other : possible_collisions) {
                     if (&tank == other) continue;
 
                     //Collidable for making sure the tank only hits the particle once in a frame
                     // Because multiple tiles around the tank contain the same particle collidable
-                    Particle_beam* hitParticle = nullptr;
+                    Particle_beam* hit_particle = nullptr;
 
                     //Since the beam does not have a position and round collision field, check it first.
-                    if (other->collider_type == Collider::BEAM && hitParticle != other) {
+                    if (other->collider_type == Collider::BEAM && hit_particle != other) {
                         Particle_beam* particle_beam = dynamic_cast<Particle_beam*>(other);
                         vec2 pos = tank.col_get_current_position();
                         float radius = tank.col_get_collision_radius();
@@ -417,7 +416,7 @@ void Game::update(float deltaTime)
                         {
                             if (tank.hit(particle_beam->damage))
                             {
-                                hitParticle = particle_beam;
+                                hit_particle = particle_beam;
                                 mlock.lock();
                                 smokes.push_back(Smoke(smoke, tank.position - vec2(0, 48)));
                                 mlock.unlock();
@@ -469,7 +468,7 @@ void Game::update(float deltaTime)
             }
             }));
 
-        startAt += count;
+        start_at += count;
     }
     wait_and_clear(threads);
 
@@ -507,10 +506,10 @@ void Game::update(float deltaTime)
         });
 
     //Rockets reloading
-    startAt = 0;
+    start_at = 0;
     for (int count : split_sizes_tanks) {
-        threads.push_back(pool->enqueue([&, startAt, count]() {
-            for (int j = startAt; j < startAt + count; j++)
+        threads.push_back(pool->enqueue([&, start_at, count]() {
+            for (int j = start_at; j < start_at + count; j++)
             {
                 Tank& tank = active_tanks.at(j);
                 //Shoot at closest target if reloaded
@@ -526,7 +525,7 @@ void Game::update(float deltaTime)
                 }
             }
             }));
-        startAt += count;
+        start_at += count;
     }
     wait_and_clear(threads);
 
@@ -614,12 +613,10 @@ void Game::draw()
         Tank current_tank = active_tanks.at(i);
 
         if (current_tank.allignment == BLUE) {
-            //sorted_tanks_blue.emplace_back(current_tank);
             blue_tanks[blue] = int(current_tank.health);
             blue++;
         }
         else {
-            //sorted_tanks_red.emplace_back(current_tank);
             red_tanks[red] = int(current_tank.health);
             red++;
 
@@ -627,10 +624,10 @@ void Game::draw()
     }
     //Start a thread to sort the health values.
     auto sort_blue = pool->enqueue([&]() {
-        sorting::health_merge_sort(blue_tanks, 0, blue_count - 1);
+        sorting::merge_sort(blue_tanks, 0, blue_count - 1);
         });
     auto sort_red = pool->enqueue([&]() {
-        sorting::health_merge_sort(red_tanks, 0, red_count - 1);
+        sorting::merge_sort(red_tanks, 0, red_count - 1);
         });
 
 
@@ -737,6 +734,7 @@ void Tmpl8::Game::draw_health_bars(const int sorted_health[], const int team, co
         }
         else { screen->bar(health_bar_start_x, health_bar_start_y, health_bar_end_x - (int)((double)health_bar_width * health_fraction), health_bar_end_y, GREENMASK); }
     }
+    
 }
 
 // -----------------------------------------------------------
@@ -786,11 +784,6 @@ void Game::tick(float deltaTime)
 
     measure_performance();
 
-    // print something in the graphics window
-    //screen->Print("hello world", 2, 2, 0xffffff);
-
-    // print something to the text window
-    //cout << "This goes to the console window." << std::endl;
 
     //Print frame count
     frame_count++;
