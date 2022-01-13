@@ -18,7 +18,7 @@ Het optimaliseren van een tank simulatie.
 Voor de eerste optimalisatie hadden we een Quadtree gemaakt. Deze bleek echter niet heel erg snel omdat het opbouwen en opvragen erg intensief is.
 Daarna hebben we een uniform grid aangemaakt. Deze was vele malen sneller. Single threaded uniform was evensnel als multithreaded Quadtree.
 Daarom zijn we doorgegaan met de uniform grid. 
-De uniform grid heeft een [`constante lookup`](./collision_grid.cpp#L100). 
+De uniform grid heeft een [`constante lookup`](./collision_grid.cpp#L30). 
 
 We hebben de objecten zoals *Tank*, *Rocket* en *Particle Beam*. laten erven van een nieuwe class: *Collidable*. De uniform grid bestaat uit tiles die allemaal collidables kunnen vasthouden. Voor collision worden de omliggende tiles gepakt en met alle objecten gecheckt voor collision.
 
@@ -87,5 +87,3 @@ We hebben geprobeerd A* pathfinding toe te passen, deze probeersels zijn nog te 
 ### Multithreading
 Ook hebben wij bij grote for loops de lijst gesplit in het aantal te gebruiken threads om zo de workload te verspreiden. Bijvoorbeeld bij de [`draw`](./game.cpp#L626) functie starten we op 1 thread de merge sort en gaan dan op de main thread verder met schrijven naar de canvas. We gebruiken in dit soort momenten maar 1 thread omdat de overhead anders te groot wordt. De merge sort is al heel erg snel dus het aanmaken van allemaal threads is het niet waard maar op deze manier is het toch net wat sneller. Ditzelfde gebeurt ook bij de [`convex hull`](./game.cpp#L501)
 
-> Note
-In visual studio worden out of range errors in de "output" gezet. Dit zijn errors die [`opgevangen worden`](./collision_grid.cpp#L46).

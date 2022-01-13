@@ -22,12 +22,12 @@ public:
     /// Add a collidable to the tile
     /// </summary>
     /// <param name="c">Collidable to add</param>
-    void addCollidable(Collidable* c);
+    void add_collidable(Collidable* c);
     /// <summary>
     /// Add a neighbour tile to the current tile. Should only be used in initialization.
     /// </summary>
     /// <param name="neighbour">The new neighbour</param>
-    void addNeighbour(CollisionTile* neighbour);
+    void add_neighbour(CollisionTile* neighbour);
 
 
 };
@@ -46,7 +46,7 @@ public:
     /// <param name="x">X index</param>
     /// <param name="y">Y index</param>
     /// <returns>Tile at x,y in the tile array</returns>
-    CollisionTile* getTile(int x, int y);
+    CollisionTile* get_tile(int x, int y);
     /// <summary>
     /// Put the collidable in the correct tile according to its position.
     /// </summary>
@@ -57,7 +57,7 @@ public:
     /// </summary>
     /// <param name="pos">World position</param>
     /// <returns>Tile where the worldposition lies in</returns>
-    CollisionTile* getTileFor(const vec2& pos);
+    CollisionTile* get_tile_for(vec2 pos);
     /// <summary>
     /// Clear all objects from the grid except for the particle beams.
     /// </summary>
@@ -66,10 +66,17 @@ public:
     /// Lock for multithreading
     /// </summary>
     mutex* mlock;
+    /// <summary>
+    /// Check if a tile at that index exists
+    /// </summary>
+    /// <param name="x"></param>
+    /// <param name="y"></param>
+    /// <returns></returns>
+    bool tile_exists(int x, int y);
 
 
 private:
-    vec2 getTileIndex(const vec2 pos);
+    vec2 get_tile_index(vec2 pos);
 
     // ---- Grid tile width and height ----
     //Screen: 1280 x 720

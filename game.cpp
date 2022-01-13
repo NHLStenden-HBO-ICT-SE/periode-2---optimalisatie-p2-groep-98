@@ -75,7 +75,7 @@ vector<int> get_evenly_splitted(int size, int split_size) {
 
     int base_value = floor(size / split_size);
     vector<int> results;
-    for (size_t i = 0; i < split_size; i++)
+    for (int i = 0; i < split_size; i++)
         results.push_back(base_value + (--remainder >= 0 ? 1 : 0));
     return results;
 }
@@ -140,7 +140,7 @@ Tank& Game::find_closest_enemy(Tank& current_tank)
     int closest_index = 0;
 
     //Check the tiles around for enemy tanks.
-    CollisionTile* tile = grid.getTileFor(current_tank.col_get_current_position());
+    CollisionTile* tile = grid.get_tile_for(current_tank.col_get_current_position());
     vector<CollisionTile*> near_tiles;
     near_tiles.insert(near_tiles.end(), tile->neighbours.begin(), tile->neighbours.end());
     near_tiles.push_back(tile);
@@ -244,7 +244,7 @@ vector<vec2> convex_hull(vector<vec2> points)
 
     
     vec2* arr_points = new vec2[points.size()];
-    for (size_t i = 0; i < points.size(); i++)
+    for (int i = 0; i < points.size(); i++)
     {
         arr_points[i] = vec2(points.at(i));
     }
@@ -396,7 +396,7 @@ void Game::update(float deltaTime)
             {
                 Tank& tank = active_tanks.at(j);
 
-                CollisionTile* tank_tile = grid.getTileFor(tank.get_position());
+                CollisionTile* tank_tile = grid.get_tile_for(tank.get_position());
 
                 //Get a list of all collidables near the tile
                 vector<Collidable*> possible_collisions = tank_tile->get_possible_collidables();
@@ -507,6 +507,8 @@ void Game::update(float deltaTime)
 
     //Rockets reloading
     start_at = 0;
+    //Recalculate split sizes because inactive tanks have been moved
+    split_sizes_tanks = get_evenly_splitted(active_tanks.size(), NUM_OF_THREADS);
     for (int count : split_sizes_tanks) {
         threads.push_back(pool->enqueue([&, start_at, count]() {
             for (int j = start_at; j < start_at + count; j++)
@@ -556,7 +558,7 @@ void Game::update(float deltaTime)
     {
         if (rocket.active && frame_count > 1)
         {
-            for (size_t i = 0; i < forcefield_hull.size(); i++)
+            for (int i = 0; i < forcefield_hull.size(); i++)
             {
                 if (circle_segment_intersect(forcefield_hull.at(i), forcefield_hull.at((i + 1) % forcefield_hull.size()), rocket.position, rocket.collision_radius))
                 {
@@ -593,8 +595,8 @@ void Game::update(float deltaTime)
 void Game::draw()
 {
     //Preparing arrays for health bars
-    size_t blue_count = 0;
-    size_t red_count = 0;
+    int blue_count = 0;
+    int red_count = 0;
     for (Tank t : active_tanks) {
         if (t.allignment == BLUE) {
             blue_count++;
@@ -606,8 +608,8 @@ void Game::draw()
 
     int* blue_tanks = new int[blue_count];
     int* red_tanks = new int[red_count];
-    size_t red = 0;
-    size_t blue = 0;
+    int red = 0;
+    int blue = 0;
 
     for (int i = 0; i < active_tanks.size(); i++) {
         Tank current_tank = active_tanks.at(i);
@@ -669,7 +671,7 @@ void Game::draw()
     }
 
     //Draw forcefield (mostly for debugging, its kinda ugly..)
-    for (size_t i = 0; i < forcefield_hull.size(); i++)
+    for (int i = 0; i < forcefield_hull.size(); i++)
     {
         vec2 line_start = forcefield_hull.at(i);
         vec2 line_end = forcefield_hull.at((i + 1) % forcefield_hull.size());

@@ -3,40 +3,31 @@
 
 void CollisionGrid::initialize_tiles_neighbours()
 {
-    for (size_t y = 0; y < tiles.size(); y++)
+    for (int y = 0; y < tiles.size(); y++)
     {
         array< CollisionTile, width> horizontal = tiles.at(y);
-        for (size_t x = 0; x < horizontal.size(); x++)
+        for (int x = 0; x < horizontal.size(); x++)
         {
-            CollisionTile* target = this->getTile(x, y);
-            
-            CollisionTile* neighbours[8] = {
-                this->getTile(x, y + 1),        //up
-                this->getTile(x, y - 1),        //down
-                this->getTile(x - 1, y),        //left
-                this->getTile(x + 1, y),            //right
-                this->getTile(x + 1, y + 1),    //r_up
-                this->getTile(x - 1, y + 1),    //l_up
-                this->getTile(x + 1, y - 1),    //r_down
-                this->getTile(x - 1, y - 1)     //l_down
-
-            };
-
-            //Looping over array to check if it is not a nullptr.
-            for (size_t i = 0; i < 8; i++)
+            CollisionTile* target = this->get_tile(x, y);
+            for (int x_dif = -1; x_dif <= 1; x_dif++)
             {
-                CollisionTile* t = neighbours[i];
-                if (t) {
-                    target->addNeighbour(t);
+                
+                for (int y_dif = -1; y_dif <= 1; y_dif++) {
+                    int use_x = x + x_dif;
+                    int use_y = y + y_dif;
+                    //Don't add itself as neighbour
+                    if (x_dif == 0 && y_dif == 0) continue;
+                    if (tile_exists(use_x, use_y)) {
+                        target->add_neighbour(get_tile(use_x,use_y));
+                    }
                 }
             }
-            
 
         }
     }
 }
 
-CollisionTile* CollisionGrid::getTile(int x, int y)
+CollisionTile* CollisionGrid::get_tile(int x, int y)
 {
     CollisionTile* tile;
         try {
@@ -63,16 +54,16 @@ void CollisionGrid::update_tile(Collidable* col)
 
 
         //Get the tile indexes for each corner
-        vec2 p_lo = getTileIndex(lo);
-        vec2 p_lb = getTileIndex(lb);
-        vec2 p_ro = getTileIndex(ro);
-        vec2 p_rb = getTileIndex(rb);
+        vec2 p_lo = get_tile_index(lo);
+        vec2 p_lb = get_tile_index(lb);
+        vec2 p_ro = get_tile_index(ro);
+        vec2 p_rb = get_tile_index(rb);
         
         //Get all the tiles in between the corners
         for (int x = p_lo.x; x < p_ro.x + 1; x++) {
             for (int y = p_lo.y; y < p_lb.y + 1; y++) {
                 mlock->lock();
-                getTile(x, y)->addCollidable(col);
+                get_tile(x, y)->add_collidable(col);
                 mlock->unlock();
             }
         } 
@@ -81,14 +72,19 @@ void CollisionGrid::update_tile(Collidable* col)
 
 
     vec2& pos = col->col_get_current_position();
-    CollisionTile* tile = getTileFor(pos);
+    CollisionTile* tile = get_tile_for(pos);
     mlock->lock();
     tile->objects.push_back(col);
     mlock->unlock();
 }
 
 
-vec2 CollisionGrid::getTileIndex(const vec2 pos) {
+bool CollisionGrid::tile_exists(int x, int y)
+{
+    return x >= 0 && x < width&& y >= 0 && y < height;
+}
+
+vec2 CollisionGrid::get_tile_index(vec2 pos) {
     size_t pos_x = pos.x / divider;
     size_t pos_y = pos.y / divider;
 
@@ -97,7 +93,7 @@ vec2 CollisionGrid::getTileIndex(const vec2 pos) {
     return vec2(pos_x, pos_y);
 }
 
-CollisionTile* CollisionGrid::getTileFor(const vec2& pos)
+CollisionTile* CollisionGrid::get_tile_for(vec2 pos)
 {
     
     size_t pos_x = pos.x / divider;
@@ -111,10 +107,10 @@ CollisionTile* CollisionGrid::getTileFor(const vec2& pos)
 
 void CollisionGrid::clear_grid()
 {
-    for (size_t y = 0; y < tiles.size(); y++)
+    for (int y = 0; y < tiles.size(); y++)
     {
         array< CollisionTile, width>& horizontal = tiles.at(y);
-        for (size_t x = 0; x < horizontal.size(); x++)
+        for (int x = 0; x < horizontal.size(); x++)
         {
             CollisionTile& item = horizontal.at(x);
 
@@ -138,7 +134,7 @@ vector<Collidable*> CollisionTile::get_possible_collidables()
     return results;
 }
 
-void CollisionTile::addCollidable(Collidable* c)
+void CollisionTile::add_collidable(Collidable* c)
 {
     if (c->collider_type == Collider::BEAM) {
         this->beams.push_back(c);
@@ -147,12 +143,14 @@ void CollisionTile::addCollidable(Collidable* c)
     this->objects.push_back(c);
 }
 
-void CollisionTile::addNeighbour(CollisionTile* neighbour)
+void CollisionTile::add_neighbour(CollisionTile* neighbour)
 {
     if (neighbour) {
         this->neighbours.push_back(neighbour);
     }
 
 }
+
+
 
 
