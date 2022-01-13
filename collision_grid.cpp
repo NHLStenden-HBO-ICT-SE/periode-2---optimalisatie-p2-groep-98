@@ -125,12 +125,6 @@ void CollisionGrid::clearGrid()
 }
 
 
-
-vector<Collidable*> CollisionTile::getObjects()
-{
-	return vector<Collidable*>();
-}
-
 vector<Collidable*> CollisionTile::getPossibleCollidables()
 {
     vector<Collidable*> results = this->objects;

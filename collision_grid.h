@@ -4,11 +4,12 @@
 class CollisionTile
 {
 public:
-
+    /// <summary>
+    /// All tiles around the current tile.
+    /// </summary>
     vector<CollisionTile*> neighbours;
     
 
-    vector<Collidable*> getObjects();
     /// <summary>
     /// Get all Collidables in tiles around the tile
     /// </summary>

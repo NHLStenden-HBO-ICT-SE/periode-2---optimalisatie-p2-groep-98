@@ -21,7 +21,7 @@ constexpr auto health_bar_width = 70;
 constexpr auto max_frames = 2000;
 
 //Global performance timer
-constexpr auto REF_PERFORMANCE = 29696.7; //UPDATE THIS WITH YOUR REFERENCE PERFORMANCE (see console after 2k frames)
+constexpr auto REF_PERFORMANCE = 98032.8; //UPDATE THIS WITH YOUR REFERENCE PERFORMANCE (see console after 2k frames)
 static timer perf_timer;
 static float duration;
 
@@ -54,9 +54,9 @@ std::mutex mlock;
 vector<future<void>> threads;
 
 /*
-//Counter
+//Timer
 auto begin2 = chrono::high_resolution_clock::now();
-
+    //Calculations here
 auto end2 = chrono::high_resolution_clock::now();
 auto dur = end2 - begin2;
 auto ms = std::chrono::duration_cast<std::chrono::nanoseconds>(dur).count() / 10000;
@@ -64,6 +64,12 @@ cout << "UPDATE " << ms << endl;
 */
 
 
+/// <summary>
+/// Split a number into even parts.
+/// </summary>
+/// <param name="size">Number to split</param>
+/// <param name="split_size">Times to split the number</param>
+/// <returns>List with evenly divided numbers</returns>
 vector<int> get_evenly_splitted(int size, int split_size) {
     int remainder = size % split_size;
 
@@ -75,7 +81,7 @@ vector<int> get_evenly_splitted(int size, int split_size) {
 }
 
 
-CollisionGrid* grid = new CollisionGrid();
+CollisionGrid grid = CollisionGrid();
 
 
 // -----------------------------------------------------------
@@ -134,11 +140,12 @@ Tank& Game::find_closest_enemy(Tank& current_tank)
     int closest_index = 0;
 
     //Check the tiles around for enemy tanks.
-    CollisionTile* tile = grid->getTileFor(current_tank.col_get_current_position());
+    CollisionTile* tile = grid.getTileFor(current_tank.col_get_current_position());
     vector<CollisionTile*> near_tiles;
     near_tiles.insert(near_tiles.end(), tile->neighbours.begin(), tile->neighbours.end());
     near_tiles.push_back(tile);
     Tank* closest = nullptr;
+    //If the tank has enemy neighbours, use those.
     for (CollisionTile* t : near_tiles) {
         for (Collidable* c : t->objects) {
             if (c->collider_type != Collider::TANK) continue;
@@ -157,9 +164,6 @@ Tank& Game::find_closest_enemy(Tank& current_tank)
         return *closest;
     }
 
-
-
-
     //If there is no tank in a neighbour tile, check all other
     for (int i = 0; i < active_tanks.size(); i++)
     {
@@ -177,7 +181,6 @@ Tank& Game::find_closest_enemy(Tank& current_tank)
     return active_tanks.at(closest_index);
 }
 
-vector<vec2> points_on_hull;
 
 /// <summary>
 /// Waits for all futures in the array and then clears the array.
@@ -190,7 +193,11 @@ void wait_and_clear(vector<future<void>>& threads) {
     threads.clear();
 }
 
-// Find next to top in a stack
+/// <summary>
+/// Find next to top in a stack
+/// </summary>
+/// <param name="S">stack</param>
+/// <returns></returns>
 vec2 next_to_top(stack<vec2>& S)
 {
     vec2 p = S.top();
@@ -201,7 +208,11 @@ vec2 next_to_top(stack<vec2>& S)
 }
 
 
-// Swap two points
+/// <summary>
+/// Swap two points
+/// </summary>
+/// <param name="p1"></param>
+/// <param name="p2"></param>
 void swap(vec2& p1, vec2& p2)
 {
     vec2 temp = p1;
@@ -209,9 +220,14 @@ void swap(vec2& p1, vec2& p2)
     p2 = temp;
 }
 
-
-void convex_hull(vector<vec2> points)
+/// <summary>
+/// Clear the points list except for the most outer points.
+/// </summary>
+/// <param name="points">The list to edit</param>
+vector<vec2> convex_hull(vector<vec2> points)
 {
+    vector<vec2> points_on_hull;
+
     // Find the bottommost point
     float ymin = points.at(0).y, min = 0;
     for (int i = 1; i < points.size(); i++)
@@ -281,6 +297,7 @@ void convex_hull(vector<vec2> points)
 
     }
     delete[] arr_points;
+    return points_on_hull;
 }
 
 // -----------------------------------------------------------
@@ -293,17 +310,17 @@ void convex_hull(vector<vec2> points)
 void Game::update(float deltaTime)
 {
     threads.reserve(NUM_OF_THREADS);
-    grid->mlock = &mlock;
+    grid.mlock = &mlock;
     vector<int> split_sizes_tanks = get_evenly_splitted(active_tanks.size(), NUM_OF_THREADS);
     //Calculate the route to the destination for each tank using BFS
     //Initializing routes here so it gets counted for performance..
     if (frame_count == 0)
     {
         auto init = pool->enqueue([&]() {
-            grid->initializeTilesNeighbours();
+            grid.initializeTilesNeighbours();
 
             for (Particle_beam& particle_beam : particle_beams) {
-                grid->update_tile(&particle_beam);
+                grid.update_tile(&particle_beam);
 
             }
             });
@@ -328,7 +345,7 @@ void Game::update(float deltaTime)
 
     }
 
-    grid->clearGrid();
+    grid.clearGrid();
 
 
     int item_count = rockets.size() + active_tanks.size();
@@ -343,12 +360,12 @@ void Game::update(float deltaTime)
             for (int j = startAt; j < startAt + count; j++)
             {
                 Tank& tank = active_tanks.at(j);
-                grid->update_tile(&tank);
+                grid.update_tile(&tank);
             }
             }));
         startAt += count;
     }
-    //If the rocket count is big enough, multithread it.
+    //If the rocket count is big enough, multithread it. Otherwise the overhead is just to big
     startAt = 0;
     if (rocket_threads != 0) {
         vector<int> rocket_sizes = get_evenly_splitted(rockets.size(), rocket_threads);
@@ -357,7 +374,7 @@ void Game::update(float deltaTime)
                 for (int j = startAt; j < startAt + count; j++) {
 
                     Rocket& rocket = rockets.at(j);
-                    grid->update_tile(&rocket);
+                    grid.update_tile(&rocket);
                 }
                 }));
             startAt += count;
@@ -365,7 +382,7 @@ void Game::update(float deltaTime)
     }
     else {
         for (Rocket& r : rockets) {
-            grid->update_tile(&r);
+            grid.update_tile(&r);
         }
     }
     wait_and_clear(threads);
@@ -380,7 +397,7 @@ void Game::update(float deltaTime)
             {
                 Tank& tank = active_tanks.at(j);
 
-                CollisionTile* tank_tile = grid->getTileFor(tank.get_position());
+                CollisionTile* tank_tile = grid.getTileFor(tank.get_position());
 
                 //Get a list of all collidables near the tile
                 vector<Collidable*> possible_collisions = tank_tile->getPossibleCollidables();
@@ -407,9 +424,6 @@ void Game::update(float deltaTime)
                             }
                         }
                     }
-
-
-
 
 
                     //Tank collision
@@ -462,9 +476,7 @@ void Game::update(float deltaTime)
 
     vector<vec2> points;
 
-    //Calculate "forcefield" around active tanks, clears forcefield here
-    forcefield_hull.clear();
-    points_on_hull.clear();
+    
 
     //Calculate convex hull for 'rocket barrier'
     //Update tanks
@@ -484,12 +496,17 @@ void Game::update(float deltaTime)
     //Remove inactive tanks from active list
     active_tanks.erase(std::remove_if(active_tanks.begin(), active_tanks.end(), [](const Tank& tank) { return !tank.active; }), active_tanks.end());
 
+
+    //Calculate "forcefield" around active tanks, clears forcefield here
+    forcefield_hull.clear();
     auto convex_hull_task = pool->enqueue([&]() {
         //Calculates points_on_hull
-        convex_hull(points);
+        vector<vec2> points_on_hull = convex_hull(points);
         for (vec2& point_on_hull : points_on_hull)
             forcefield_hull.push_back(point_on_hull);
         });
+
+    //Rockets reloading
     startAt = 0;
     for (int count : split_sizes_tanks) {
         threads.push_back(pool->enqueue([&, startAt, count]() {
@@ -535,7 +552,7 @@ void Game::update(float deltaTime)
     convex_hull_task.wait();
 
     //Disable rockets if they collide with the "forcefield"
-    //Hint: A point to convex hull intersection test might be better here? :) (Disable if outside)
+
     for (Rocket& rocket : rockets)
     {
         if (rocket.active && frame_count > 1)
@@ -676,7 +693,7 @@ void Game::draw()
     delete[] blue_tanks;
     delete[] red_tanks;
 
-
+    
 }
 
 

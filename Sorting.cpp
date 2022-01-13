@@ -40,7 +40,13 @@ int compare(vec2 point1, vec2 point2, vec2 p0)
     return (dir == 2) ? -1 : 1;
 }
 
-
+/// <summary>
+/// Merge two arrays of vec2
+/// </summary>
+/// <param name="to_sort"></param>
+/// <param name="left"></param>
+/// <param name="mid"></param>
+/// <param name="right"></param>
 void sorting::convex_merge(vec2 to_sort[], int const left, int const mid, int const right)
 {
     int sub_array_1 = mid - left + 1;
@@ -93,7 +99,12 @@ void sorting::convex_merge(vec2 to_sort[], int const left, int const mid, int co
 
 }
 
-
+/// <summary>
+/// Sort the array of vec2
+/// </summary>
+/// <param name="list"></param>
+/// <param name="begin"></param>
+/// <param name="end"></param>
 void sorting::convex_merge_sort(vec2 list[], int const begin, int const end)
 {
     if (begin >= end) {
@@ -106,8 +117,14 @@ void sorting::convex_merge_sort(vec2 list[], int const begin, int const end)
 
 }
 
-
-void sorting::health_merge(int to_sort[], int const left, int const mid, int const right)
+/// <summary>
+/// Merge 2 list of int
+/// </summary>
+/// <param name="to_sort"></param>
+/// <param name="left"></param>
+/// <param name="mid"></param>
+/// <param name="right"></param>
+void sorting::merge(int to_sort[], int const left, int const mid, int const right)
 {
     int sub_array_1 = mid - left + 1;
     int sub_array_2 = right - mid;
@@ -159,13 +176,18 @@ void sorting::health_merge(int to_sort[], int const left, int const mid, int con
 
 }
 
-
-void sorting::health_merge_sort(int array_to_sort[], int const begin_index, int const end_index)
+/// <summary>
+/// Sort the array from high to low
+/// </summary>
+/// <param name="array_to_sort"></param>
+/// <param name="begin_index"></param>
+/// <param name="end_index"></param>
+void sorting::merge_sort(int array_to_sort[], int const begin_index, int const end_index)
 {
     if (begin_index >= end_index) return;
 
     int middle = begin_index + (end_index - begin_index) / 2;
-    health_merge_sort(array_to_sort, begin_index, middle);
-    health_merge_sort(array_to_sort, middle + 1, end_index);
-    health_merge(array_to_sort, begin_index, middle, end_index);
+    merge_sort(array_to_sort, begin_index, middle);
+    merge_sort(array_to_sort, middle + 1, end_index);
+    merge(array_to_sort, begin_index, middle, end_index);
 }
