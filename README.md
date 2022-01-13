@@ -69,6 +69,9 @@ Omdat alleen de grootste factor meetelt is de tijdcomplexiteit: `O(N log N)`.
 Alle tanks worden doorlopen, deze worden dus een keer opgeslagen en doorlopen, dus daarom is de ruimte complexiteit: `O(N)`
 
 
+### **Find closest enemy**
+We hebben geprobeerd om dit te optimaliseren door de grid tiles te gebruiken in een soort BFS algoritme. Omdat vooral in het begin de tanks erg ver uit elkaar zijn vertraagd dit systeem het juist. Daarom kijken we alleen naar de 8 tiles om de tank heen om te kijken of er een tegenstander zit. Als dat niet zo is gaat hij alle tanks checken.
+
 ### **For loops hergebruiken**
 Er zaten veel verschillende for loops in Game.cpp die hetzelfde deden (loopen door alle tanks bijvoorbeeld), deze zijn gecombineerd om minder for-loops te krijgen.
 
