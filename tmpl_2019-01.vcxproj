@@ -129,6 +129,7 @@
     <ClCompile Include="particle_beam.cpp" />
     <ClCompile Include="rocket.cpp" />
     <ClCompile Include="smoke.cpp" />
+    <ClCompile Include="sorting.cpp" />
     <ClCompile Include="surface.cpp" />
     <ClCompile Include="tank.cpp" />
     <ClCompile Include="template.cpp">

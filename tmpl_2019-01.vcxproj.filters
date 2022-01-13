@@ -16,6 +16,7 @@
     <ClCompile Include="terrain.cpp" />
     <ClCompile Include="collidable.cpp" />
     <ClCompile Include="collision_grid.cpp" />
+    <ClCompile Include="sorting.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="game.h" />
