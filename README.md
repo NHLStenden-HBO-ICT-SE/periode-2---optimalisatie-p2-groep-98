@@ -4,10 +4,15 @@
 Het optimaliseren van een tank simulatie.
 
 
+
+
 ## Interessante Punten Optimalisatie
 ---
 ### Note
+> Gebruik Visual Studio 2022
+
 > Alle tijd en ruimte complexiteiten bij de Big-O analyses zijn we uitgegaan van de gemiddelde complexiteit. 
+
 
 ### **Collision detectie ([`game.cpp`](./game.cpp#L389))**
 Voor de eerste optimalisatie hadden we een Quadtree gemaakt. Deze bleek echter niet heel erg snel omdat het opbouwen en opvragen erg intensief is.
