@@ -1,5 +1,4 @@
 #include "precomp.h"
-#include "tank.h"
 
 
 namespace Tmpl8

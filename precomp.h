@@ -38,7 +38,13 @@
 #include <SDL.h>
 #pragma warning(pop)
 
+
+
+
 // C++ headers
+#include <stack>
+#include <map>
+#include <iterator>
 #include <algorithm>
 #include <array>
 #include <chrono>

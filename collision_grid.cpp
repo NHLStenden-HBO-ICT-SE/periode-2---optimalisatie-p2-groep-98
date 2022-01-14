@@ -1,5 +1,4 @@
 #include "precomp.h"
-#include "collision_grid.h"
 
 void CollisionGrid::initialize_tiles_neighbours()
 {

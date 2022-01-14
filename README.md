@@ -14,11 +14,11 @@ Het optimaliseren van een tank simulatie.
 > Alle tijd en ruimte complexiteiten bij de Big-O analyses zijn we uitgegaan van de gemiddelde complexiteit. 
 
 
-### **Collision detectie ([`game.cpp`](./game.cpp#L389))**
+### **Collision detectie ([`game.cpp`](./game.cpp#L382))**
 Voor de eerste optimalisatie hadden we een Quadtree gemaakt. Deze bleek echter niet heel erg snel omdat het opbouwen en opvragen erg intensief is.
 Daarna hebben we een uniform grid aangemaakt. Deze was vele malen sneller. Single threaded uniform was evensnel als multithreaded Quadtree.
 Daarom zijn we doorgegaan met de uniform grid. 
-De uniform grid heeft een [`constante lookup`](./collision_grid.cpp#L30). 
+De uniform grid heeft een [`constante lookup`](./collision_grid.cpp#L29). 
 
 We hebben de objecten zoals *Tank*, *Rocket* en *Particle Beam*. laten erven van een nieuwe class: *Collidable*. De uniform grid bestaat uit tiles die allemaal collidables kunnen vasthouden. Voor collision worden de omliggende tiles gepakt en met alle objecten gecheckt voor collision.
 
@@ -34,9 +34,9 @@ In een gemiddeld geval zijn de tanks verspreid en is de detectie dus constant.
 De ruimtecomplexiteit is het aantal `O(T + N)` waar T het aantal tiles is.
 
 
-### **Merge sort ([`sorting.cpp`](./sorting.cpp#L169))**
+### **Merge sort ([`sorting.cpp`](./sorting.cpp#L184))**
 Voor de health bar werd *insertion sort* gebruikt. Dit hebben wij aangepast naar *merge sort*.
-We kwamen er achter dat vectoren het process erg vertraagden. Daarom hebben wij arrays gebruikt. De merge sort wordt gebruikt voor de [`health bar`](./game.cpp#L626) en voor het sorteren van vec2 in de [`convex hull`](./game.cpp#L252).
+We kwamen er achter dat vectoren het process erg vertraagden. Daarom hebben wij arrays gebruikt. De merge sort wordt gebruikt voor de [`health bar`](./game.cpp#L621) en voor het sorteren van vec2 in de [`convex hull`](./game.cpp#L245).
 
 
 #### **Big-O**:
@@ -53,7 +53,7 @@ Omdat de lijst gesplit wordt en de oude er niet blijft is de ruimte complexiteit
 
 
 
-### **Graham Scan Convex hull ([`game.cpp`](./game.cpp#L227))**
+### **Graham Scan Convex hull ([`game.cpp`](./game.cpp#L220))**
 Voor de *convex hull* werd een (volgens ons) brute force manier gebruikt om de hull te berekenen.
 Deze is vervangen door *Graham Scan* in combinatie met [*Merge Sort*](./sorting.cpp#L103).
 
@@ -85,5 +85,5 @@ We hebben geprobeerd A* pathfinding toe te passen, deze probeersels zijn nog te 
 
 
 ### Multithreading
-Ook hebben wij bij grote for loops de lijst gesplit in het aantal te gebruiken threads om zo de workload te verspreiden. Bijvoorbeeld bij de [`draw`](./game.cpp#L626) functie starten we op 1 thread de merge sort en gaan dan op de main thread verder met schrijven naar de canvas. We gebruiken in dit soort momenten maar 1 thread omdat de overhead anders te groot wordt. De merge sort is al heel erg snel dus het aanmaken van allemaal threads is het niet waard maar op deze manier is het toch net wat sneller. Ditzelfde gebeurt ook bij de [`convex hull`](./game.cpp#L501)
+Ook hebben wij bij grote for loops de lijst gesplit in het aantal te gebruiken threads om zo de workload te verspreiden. Bijvoorbeeld bij de [`draw`](./game.cpp#L621) functie starten we op 1 thread de merge sort en gaan dan op de main thread verder met schrijven naar de canvas. We gebruiken in dit soort momenten maar 1 thread omdat de overhead anders te groot wordt. De merge sort is al heel erg snel dus het aanmaken van allemaal threads is het niet waard maar op deze manier is het toch net wat sneller. Ditzelfde gebeurt ook bij de [`convex hull`](./game.cpp#L594)
 

@@ -48,12 +48,7 @@ vector<future<void>> threads;
 
 /*
 //Timer
-auto begin2 = chrono::high_resolution_clock::now();
-    //Calculations here
-auto end2 = chrono::high_resolution_clock::now();
-auto dur = end2 - begin2;
-auto ms = std::chrono::duration_cast<std::chrono::nanoseconds>(dur).count() / 10000;
-cout << "UPDATE " << ms << endl;
+
 */
 
 
@@ -587,43 +582,59 @@ void Game::update(float deltaTime)
 // -----------------------------------------------------------
 void Game::draw()
 {
+    auto begin2 = chrono::high_resolution_clock::now();
+    
+    auto health = pool->enqueue([&]() {
+        int blue_count = 0;
+        int red_count = 0;
+        for (Tank t : active_tanks) {
+            if (t.allignment == BLUE) {
+                blue_count++;
+            }
+            else {
+                red_count++;
+            }
+        }
+
+        int* blue_tanks = new int[blue_count];
+        int* red_tanks = new int[red_count];
+        int red = 0;
+        int blue = 0;
+
+        for (int i = 0; i < active_tanks.size(); i++) {
+            Tank current_tank = active_tanks.at(i);
+
+            if (current_tank.allignment == BLUE) {
+                blue_tanks[blue] = int(current_tank.health);
+                blue++;
+            }
+            else {
+                red_tanks[red] = int(current_tank.health);
+                red++;
+
+            }
+        }
+        auto sort_blue = pool->enqueue([&]() {
+            sorting::merge_sort(blue_tanks, 0, blue_count - 1);
+            });
+        auto sort_red = pool->enqueue([&]() {
+            sorting::merge_sort(red_tanks, 0, red_count - 1);
+            });
+        sort_blue.wait();
+        sort_red.wait();
+        draw_health_bars(blue_tanks, 0, blue_count);
+        draw_health_bars(red_tanks, 1, red_count);
+        delete[] blue_tanks;
+        delete[] red_tanks;
+        });
     //Preparing arrays for health bars
-    int blue_count = 0;
-    int red_count = 0;
-    for (Tank t : active_tanks) {
-        if (t.allignment == BLUE) {
-            blue_count++;
-        }
-        else {
-            red_count++;
-        }
-    }
-
-    int* blue_tanks = new int[blue_count];
-    int* red_tanks = new int[red_count];
-    int red = 0;
-    int blue = 0;
-
-    for (int i = 0; i < active_tanks.size(); i++) {
-        Tank current_tank = active_tanks.at(i);
-
-        if (current_tank.allignment == BLUE) {
-            blue_tanks[blue] = int(current_tank.health);
-            blue++;
-        }
-        else {
-            red_tanks[red] = int(current_tank.health);
-            red++;
-
-        }
-    }
+   
+    auto end2 = chrono::high_resolution_clock::now();
+    auto dur = end2 - begin2;
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(dur).count();
+    cout << "UPDATE " << ms << endl;
     //Start a thread to sort the health values.
-    auto sort_blue = pool->enqueue([&]() {
-        sorting::merge_sort(blue_tanks, 0, blue_count - 1);
-        });
-    auto sort_red = pool->enqueue([&]() {
-        sorting::merge_sort(red_tanks, 0, red_count - 1);
-        });
+    
 
 
 
@@ -675,16 +686,11 @@ void Game::draw()
 
     //Draw sorted health 
 
-    sort_blue.wait();
-    sort_red.wait();
+    
 
 
 
-    draw_health_bars(blue_tanks, 0, blue_count);
-    draw_health_bars(red_tanks, 1, red_count);
-    delete[] blue_tanks;
-    delete[] red_tanks;
-
+    health.wait();
     
 }
 
@@ -774,8 +780,10 @@ void Game::tick(float deltaTime)
     {
         update(deltaTime);
     }
-
+    
     draw();
+    //Calculations here
+   
 
     measure_performance();
 

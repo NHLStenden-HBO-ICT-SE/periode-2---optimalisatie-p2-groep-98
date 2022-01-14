@@ -1,5 +1,4 @@
 #include "precomp.h"
-#include "smoke.h"
 
 namespace Tmpl8
 {

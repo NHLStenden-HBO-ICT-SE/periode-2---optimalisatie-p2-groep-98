@@ -1,5 +1,4 @@
 #include "precomp.h"
-#include "particle_beam.h"
 
 namespace Tmpl8
 {
